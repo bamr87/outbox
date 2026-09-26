@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bamr87/outbox/protocol/schema.json",
+  "title": "Outbox message",
+  "type": "object",
+  "required": ["id", "from", "to", "type", "task_id", "env_seq", "created_at_tick"],
+  "properties": {
+    "id": { "type": "string" },
+    "from": { "type": "string" },
+    "to": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": ["claim", "retract", "env_event", "deadline_ping", "task_open"]
+    },
+    "task_id": { "type": "string" },
+    "env_seq": { "type": "integer", "minimum": 0 },
+    "created_at_tick": { "type": "integer", "minimum": 0 },
+    "closes_at_tick": { "type": ["integer", "null"] },
+    "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "parent_id": { "type": ["string", "null"] },
+    "note": { "type": "string" },
+    "payload": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "claim" } } },
+      "then": {
+        "required": ["confidence", "payload"],
+        "properties": {
+          "payload": {
+            "type": "object",
+            "required": ["answer"],
+            "properties": {
+              "answer": { "type": ["string", "number", "boolean"] },
+              "evidence": { "type": "array" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "retract" } } },
+      "then": { "required": ["parent_id"] }
+    }
+  ]
+}

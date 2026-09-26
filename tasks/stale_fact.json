@@ -1,0 +1,28 @@
+{
+  "id": "T-stale-fact",
+  "family": "stale_fact",
+  "question": "What is the live status code for service hydra?",
+  "expected_answer": "green",
+  "closes_at_tick": 8,
+  "deadline_ping_tick": 7,
+  "lag_b": 2,
+  "max_env_lag": 0,
+  "inversion_confidence": 0.75,
+  "a_sticky": false,
+  "env_schedule": [
+    {
+      "tick": 0,
+      "env_seq": 1,
+      "fact": "hydra status probe returns amber",
+      "answer_hint": "amber",
+      "note": "initial reading"
+    },
+    {
+      "tick": 4,
+      "env_seq": 2,
+      "fact": "hydra flipped to green after failover",
+      "answer_hint": "green",
+      "note": "environment moved; early claims are now stale"
+    }
+  ]
+}

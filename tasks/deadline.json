@@ -1,0 +1,28 @@
+{
+  "id": "T-deadline",
+  "family": "deadline",
+  "question": "Quote the only complete checksum available before close.",
+  "expected_answer": "partial-7f3",
+  "closes_at_tick": 5,
+  "deadline_ping_tick": 4,
+  "lag_b": 3,
+  "max_env_lag": 1,
+  "inversion_confidence": 0.75,
+  "a_sticky": false,
+  "env_schedule": [
+    {
+      "tick": 0,
+      "env_seq": 1,
+      "fact": "partial checksum partial-7f3 published",
+      "answer_hint": "partial-7f3",
+      "note": "good enough if the full hash misses the window"
+    },
+    {
+      "tick": 4,
+      "env_seq": 2,
+      "fact": "full checksum deadbeef arrives one tick before close",
+      "answer_hint": "deadbeef",
+      "note": "B may not see this in time"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "T-ambiguous",
+  "family": "ambiguous",
+  "question": "Which source is correct about the release train?",
+  "expected_answer": "beta",
+  "closes_at_tick": 8,
+  "deadline_ping_tick": 7,
+  "lag_b": 2,
+  "max_env_lag": 0,
+  "inversion_confidence": 0.75,
+  "a_sticky": true,
+  "env_schedule": [
+    {
+      "tick": 0,
+      "env_seq": 1,
+      "fact": "source-red memo: train is alpha",
+      "answer_hint": "alpha",
+      "note": "confident but wrong"
+    },
+    {
+      "tick": 1,
+      "env_seq": 2,
+      "fact": "source-blue memo: train is beta",
+      "answer_hint": "beta",
+      "note": "conflicting"
+    },
+    {
+      "tick": 5,
+      "env_seq": 3,
+      "fact": "referee: source-blue was current; train is beta",
+      "answer_hint": "beta",
+      "note": "resolves the conflict"
+    }
+  ]
+}
