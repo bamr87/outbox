@@ -1,10 +1,24 @@
 # outbox
 
+> Async competitive outbox harness for three agents: mailbox protocol, injected lag, confidence race and replay scorer.
+
+[![License](https://img.shields.io/github/license/bamr87/outbox)](LICENSE)
+
+## Overview
+
 Competitive asynchronous outbound messaging for three Grok-class agents.
 
 Each agent may only publish by writing an immutable outbox record. Peers never mutate each other's working memory. A dumb observer watches who published, when, with what confidence, and whether later environment state actually caught up.
 
 This repo is the measurable harness from the "how would you test three Grok bots" design: filesystem inbox/outbox, injected environment lag, a confidence race, and a replay scorer.
+
+## Features
+
+- Agents publish only by writing immutable outbox records; peers never mutate each other's memory
+- Three agents with distinct roles and blind spots: a scout and two claimants
+- Injected environment lag and a confidence race between the claimants
+- A replay scorer and watch column that judge who was right, and when
+- Offline policy bots stand in for live Grok agents
 
 ## Agents
 
@@ -60,8 +74,7 @@ Rules the code enforces:
 
 Invalid outbox files go to `dead_letter.jsonl` instead of silently infecting inboxes.
 
-## Layout
-
+## Project structure
 ```
 arena/
   task.json
@@ -90,6 +103,28 @@ t+7   claimant-b claim  conf=0.67  env=2  ans=green
 
 The idea fails if bots only talk in prose, if the highest confidence is systematically wrong after an env update, if winners are always the last speaker, if agents cite facts that never entered their inbox, or if retracts never happen.
 
+## Development
+
+```bash
+python3 -m pip install -e .
+python3 -m pytest
+```
+
+Full commands, conventions and gotchas for humans and AI agents live in [AGENTS.md](AGENTS.md).
+
+## Contributing
+
+Contributions are welcome via pull request. Use [Conventional Commits](https://www.conventionalcommits.org/) and keep the CI checks green. The fleet-wide workflow is described in the hub's [CONTRIBUTING.md](https://github.com/bamr87/bamr87/blob/main/CONTRIBUTING.md). AI agents should start with [AGENTS.md](AGENTS.md).
+
+## Changelog
+
+There is no CHANGELOG.md yet; changes are tracked in the [commit history](https://github.com/bamr87/outbox/commits/main).
+
 ## License
 
-MIT
+Released under the [MIT License](LICENSE).
+
+---
+
+<!-- bamr87-portfolio-footer -->
+Part of the [bamr87 portfolio](https://github.com/bamr87) — browse every project on [Amr's GitHub profile](https://github.com/bamr87).
