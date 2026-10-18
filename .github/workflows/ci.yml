@@ -1,0 +1,21 @@
+name: CI
+
+# Thin caller of the shared fleet gate (UPS-QA-20), pinned per UPS-WORK-10.
+# Gate logic lives in bamr87/bamr87/.github/workflows/standard-ci.yml.
+# Note: standard-ci only detects root-level manifests (bamr87/bamr87#329).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: bamr87/bamr87/.github/workflows/standard-ci.yml@v2
