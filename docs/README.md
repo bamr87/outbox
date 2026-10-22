@@ -13,7 +13,7 @@
 | Document | What it covers |
 | --- | --- |
 | [`AGENTS.md`](../AGENTS.md) | How to work in outbox, the three-agent competitive outbox harness: the exact commands, the layout, the trial and relay rules the code enforces, and the conventions. |
-| [`CHANGELOG.md`](../CHANGELOG.md) | Release history, written by release-please from the merged pull request titles. |
+| [`CHANGELOG.md`](../CHANGELOG.md) | Release history: the notable changes in each version, newest first. |
 | [`SCHEMA.md`](../SCHEMA.md) | Where each kind of file lives in this repository, what is forbidden there, and the rule for adding a directory. |
 | [`PRD.md`](../PRD.md) | The product requirements for outbox: the problem, its users, goals and non-goals, the protocol and scoring requirements, proposed success metrics and open questions. |
 
