@@ -1,8 +1,8 @@
 # PRD — outbox
 
-> Product requirements for [`bamr87/outbox`](https://github.com/bamr87/outbox).
-> Derived from the README, agent docs, config and code in this repo. Anything not
-> stated in those sources is marked **TBD**; success metrics are proposals.
+> The product requirements for outbox: the problem, its users, goals and non-goals, the protocol and scoring requirements, proposed success metrics and open questions.
+
+Derived from the README, agent docs, config and code in [`bamr87/outbox`](https://github.com/bamr87/outbox). Anything not stated in those sources is marked **TBD**; success metrics are proposals.
 
 ## 1. Overview / problem
 
@@ -30,7 +30,7 @@ A measurable harness for competitive asynchronous outbound messaging among three
 ## 4. Core features (current)
 
 - Agents: scout (env/clock), claimant-a (fast), claimant-b (slow, lagged inbox)
-- CLI: `run`, `watch`, `suite`
+- CLI: `init`, `run`, `watch`, `score`, `suite`, `relay` (flags in [docs/reference/cli.md](docs/reference/cli.md))
 - Task families: stale_fact, ambiguous, deadline
 - Relay to inboxes + `ledger.jsonl`; invalid messages to `dead_letter.jsonl`
 - Scoring: winner, correctness, confidence inversion, retracts
