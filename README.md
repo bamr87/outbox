@@ -2,7 +2,7 @@
 
 > Async competitive outbox harness for three agents: mailbox protocol, injected lag, confidence race and replay scorer.
 
-[![License](https://img.shields.io/github/license/bamr87/outbox)](LICENSE)
+[![CI](https://github.com/bamr87/outbox/actions/workflows/ci.yml/badge.svg)](https://github.com/bamr87/outbox/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/bamr87/outbox)](LICENSE)
 
 ## Overview
 
@@ -20,27 +20,17 @@ This repo is the measurable harness from the "how would you test three Grok bots
 - A replay scorer and watch column that judge who was right, and when
 - Offline policy bots stand in for live Grok agents
 
-## Agents
-
-| Agent | Role | Allowed types | Blind spot |
-| --- | --- | --- | --- |
-| `scout` | environment / clock | `env_event`, `deadline_ping` | cannot claim |
-| `claimant-a` | fast, high temperature | `claim`, `retract` | no patience; optional sticky first answer |
-| `claimant-b` | slow, tool-shaped | `claim`, `retract` | inbox lag `lag_b` ticks |
-
-Policy bots stand in for Grok so the suite runs offline. Live Grok Bots use the cards in `agents/` and the kickoff in `agents/grok_bots_kickoff.md`.
-
 ## Quick start
 
 ```bash
-python3 -m pip install -e .
-python3 -m outbox.cli run --task tasks/stale_fact.json --out .
-python3 -m outbox.cli watch --ledger runs/*/ledger.jsonl
-python3 -m outbox.cli suite --tasks tasks --out .
-python3 -m unittest discover -s tests -v
+python3 -m pip install -e .                                          # install (Python 3.11+, stdlib only)
+python3 -m outbox.cli run --task tasks/stale_fact.json --out .       # one trial -> runs/<run-id>/
+python3 -m outbox.cli watch --ledger runs/*/ledger.jsonl             # replay that trial's watch column
+python3 -m outbox.cli suite --tasks tasks --out /tmp/outbox-suite    # every task family, summarized
+python3 -m unittest discover -s tests -v                             # the offline test suite
 ```
 
-`run` prints a result object:
+Every subcommand and flag is in the generated [CLI reference](docs/reference/cli.md). `run` prints a result object (abridged):
 
 ```json
 {
@@ -52,6 +42,16 @@ python3 -m unittest discover -s tests -v
   "retracts": 2
 }
 ```
+
+## Agents
+
+| Agent | Role | Allowed types | Blind spot |
+| --- | --- | --- | --- |
+| `scout` | environment / clock | `env_event`, `deadline_ping` | cannot claim |
+| `claimant-a` | fast, high temperature | `claim`, `retract` | no patience; optional sticky first answer |
+| `claimant-b` | slow, tool-shaped | `claim`, `retract` | inbox lag `lag_b` ticks |
+
+Policy bots stand in for Grok so the suite runs offline. Live Grok Bots use the cards in `agents/` and the kickoff in `agents/grok_bots_kickoff.md`.
 
 ## Task families
 
@@ -74,7 +74,10 @@ Rules the code enforces:
 
 Invalid outbox files go to `dead_letter.jsonl` instead of silently infecting inboxes.
 
-## Project structure
+## Arena layout
+
+Each trial runs in its own arena directory, `runs/<run-id>/`:
+
 ```
 arena/
   task.json
@@ -103,14 +106,34 @@ t+7   claimant-b claim  conf=0.67  env=2  ans=green
 
 The idea fails if bots only talk in prose, if the highest confidence is systematically wrong after an env update, if winners are always the last speaker, if agents cite facts that never entered their inbox, or if retracts never happen.
 
+## Documentation
+
+Every document is indexed, one line each, in [docs/README.md](docs/README.md): the agent guide, the product requirements, the placement schema, the decision records and the generated [CLI reference](docs/reference/cli.md).
+
+## Project structure
+
+| Path | What |
+| --- | --- |
+| `src/outbox/` | Protocol, mailbox and relay, arena, policy agents, scorer, CLI |
+| `tasks/` | Frozen task cards the tests use |
+| `agents/` | System cards for live Grok Bots and the group kickoff |
+| `protocol/` | JSON Schema for messages |
+| `tests/` | The offline unittest suite |
+| `tools/` | Documentation generators |
+| `docs/` | The docs index, ADRs and the generated CLI reference |
+
+[`SCHEMA.md`](SCHEMA.md) is the placement contract for each of them.
+
 ## Development
 
+The Quick start block is the whole loop: install, a trial, the suite and the unit tests, all offline. After changing a CLI flag or adding a document, regenerate the generated docs (the unit tests fail until you do):
+
 ```bash
-python3 -m pip install -e .
-python3 -m pytest
+python3 tools/gen_cli_reference.py --write
+python3 tools/docs_index.py --write
 ```
 
-Full commands, conventions and gotchas for humans and AI agents live in [AGENTS.md](AGENTS.md).
+Commands, conventions and the trial rules for humans and AI agents live in [AGENTS.md](AGENTS.md).
 
 ## Contributing
 
