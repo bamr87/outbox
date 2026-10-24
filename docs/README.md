@@ -21,7 +21,9 @@
 
 | Document | What it covers |
 | --- | --- |
+| [`docs/constitution.md`](constitution.md) | The rules every change to this repo must satisfy, whoever makes it — a human or an AI agent. Agents read this before [AGENTS.md](../AGENTS.md) conventions, the [PRD](../PRD.md), or the [feature catalog](../features/features.yml). Ratified… |
 | [`docs/adr/`](adr/README.md) | Decisions for outbox that are hard to reverse — the stack, data model, security model, public interfaces, and any relaxation of a gate — one file each. |
+| [`docs/amendments/`](amendments/README.md) | The append-only log of changes to [the constitution](constitution.md). |
 
 ### `docs/reference/`
 
