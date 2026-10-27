@@ -62,3 +62,30 @@ features:
     surface: infra
     link: "src/outbox/score.py"
     docs: "README.md"
+  - id: OUTBOX-006
+    title: "Belt profile: handoff messages through one gapless, crash-repairable relay"
+    description: "Belt profile (ADR 0002): `handoff` messages (idea, assignment, draft, verdict, approval, published, signal) with a trace, sent by stations and delivered by a single-writer relay that mints a gapless `seq`; CloudEvents binding; filesystem transport only (the git ledger-branch transport is planned)"
+    implemented: true
+    status: partial
+    prd: [TBD]
+    surface: infra
+    link: "src/outbox/belt.py"
+    docs: "docs/adr/0002-belt-profile-and-claim-desk.md"
+  - id: OUTBOX-007
+    title: "Claim desk: race a draft's claims, resolve later, calibrate"
+    description: "Claim desk (ADR 0002): each claim plus a source timeline becomes a `source_claim` arena task; verdicts at close, late resolution against the truth, Brier calibration per verifier and author; offline policy claimants only (live claimant adapters are planned)"
+    implemented: true
+    status: partial
+    prd: [TBD]
+    surface: infra
+    link: "src/outbox/claimdesk.py"
+    docs: "docs/adr/0002-belt-profile-and-claim-desk.md"
+  - id: OUTBOX-008
+    title: "Local end-to-end proof of the platform plan across the sibling repos"
+    description: "`e2e/run.py`: one hack and one Wire dispatch through Sense, Plan, Produce, Verify, Publish and Learn, using scripts, lifehacker.dev, zer0-cms and gitorio's own tooling on copies of their working trees"
+    implemented: true
+    status: shipped
+    prd: [TBD]
+    surface: cli
+    link: "e2e/run.py"
+    docs: "e2e/README.md"

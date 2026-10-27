@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "meta": {
+    "name": "Drafter Line",
+    "description": "repository_dispatch(content-scouted) -> kill switch -> rate limit -> drafter agent -> one draft PR.",
+    "repo": "bamr87/lifehacker.dev"
+  },
+  "nodes": [
+    {
+      "id": "td",
+      "type": "trigger.repository_dispatch",
+      "position": {
+        "x": 40,
+        "y": 120
+      },
+      "config": {
+        "eventType": "content-scouted"
+      }
+    },
+    {
+      "id": "g",
+      "type": "gate.enablement",
+      "position": {
+        "x": 240,
+        "y": 120
+      },
+      "config": {
+        "variable": "CONTENT_FACTORY_ENABLED"
+      }
+    },
+    {
+      "id": "rl",
+      "type": "rate.limiter",
+      "position": {
+        "x": 440,
+        "y": 120
+      },
+      "config": {
+        "maxPerDay": 3
+      }
+    },
+    {
+      "id": "drafter",
+      "type": "agent.claude",
+      "position": {
+        "x": 640,
+        "y": 120
+      },
+      "config": {
+        "promptRef": ".factory/prompts/drafter.md",
+        "model": "claude-opus-5-5",
+        "maxTurns": 40
+      }
+    },
+    {
+      "id": "pr",
+      "type": "sink.open_pr",
+      "position": {
+        "x": 840,
+        "y": 120
+      },
+      "config": {
+        "branchHint": "factory/draft-*"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": {
+        "node": "td",
+        "port": "out"
+      },
+      "to": {
+        "node": "g",
+        "port": "in"
+      }
+    },
+    {
+      "id": "e2",
+      "from": {
+        "node": "g",
+        "port": "out"
+      },
+      "to": {
+        "node": "rl",
+        "port": "in"
+      }
+    },
+    {
+      "id": "e3",
+      "from": {
+        "node": "rl",
+        "port": "out"
+      },
+      "to": {
+        "node": "drafter",
+        "port": "in"
+      }
+    },
+    {
+      "id": "e4",
+      "from": {
+        "node": "drafter",
+        "port": "out"
+      },
+      "to": {
+        "node": "pr",
+        "port": "in"
+      }
+    }
+  ]
+}

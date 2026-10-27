@@ -4,10 +4,11 @@
 
 | Path | Placement | Forbidden |
 | --- | --- | --- |
-| `src/outbox/` | Protocol, mailbox, arena, policy agents, CLI | Live secrets, trial run output |
+| `src/outbox/` | Protocol, mailbox, arena, policy agents, belt, claim desk, CLI | Live secrets, trial run output |
 | `tasks/` | Frozen task cards used by tests | Generated ledgers |
 | `agents/` | System cards and Grok Bot kickoff | Code |
-| `protocol/` | JSON Schema for messages | Runtime state |
+| `protocol/` | JSON Schemas for messages: arena (`schema.json`) and belt (`belt.schema.json`) | Runtime state |
+| `e2e/` | The local end-to-end proof of the platform plan: `run.py`, adapters that run sibling repos' tooling on snapshots, fixtures, blueprints | Writes into sibling checkouts, committed run output, secrets |
 | `tests/` | Unittest suite | Network calls |
 | `tools/` | Repository scripts: the doc generators (`gen_cli_reference.py`, the vendored `docs_index.py`) | Runtime code, edits to the vendored `docs_index.py` |
 | `docs/` | The docs index (`README.md`), ADRs in `adr/`, generated reference in `reference/` | Hand edits to generated files |

@@ -70,10 +70,16 @@ def score_trial(arena_root: Path, task: dict[str, Any]) -> dict[str, Any]:
     claims = active_claims(rows, task_id, close_tick)
     winner = pick_winner(claims, latest_env, max_lag=int(task.get("max_env_lag", 0)))
     expected = task.get("expected_answer")
-    correct = bool(winner) and answers_match((winner or {}).get("payload", {}).get("answer"), expected)
-    inversion = bool(winner) and not correct and float((winner or {}).get("confidence") or 0) >= float(
-        task.get("inversion_confidence", 0.75)
-    )
+    # A task may open before its truth is known (the claim desk, ADR 0002); it is
+    # re-scored from the same ledger once a resolver fills expected_answer.
+    resolved = expected is not None
+    correct: bool | None = None
+    inversion: bool | None = None
+    if resolved:
+        correct = bool(winner) and answers_match((winner or {}).get("payload", {}).get("answer"), expected)
+        inversion = bool(winner) and not correct and float((winner or {}).get("confidence") or 0) >= float(
+            task.get("inversion_confidence", 0.75)
+        )
     first = None
     if claims:
         first = min(claims, key=lambda c: int(c.get("created_at_tick") or 0))
@@ -102,6 +108,7 @@ def score_trial(arena_root: Path, task: dict[str, Any]) -> dict[str, Any]:
             "tick": winner.get("created_at_tick"),
         },
         "first_claim_from": None if not first else first.get("from"),
+        "resolved": resolved,
         "correct": correct,
         "confidence_inversion": inversion,
         "retracts": retracts,
@@ -116,6 +123,7 @@ def summarize(results: list[dict[str, Any]]) -> dict[str, Any]:
     inversions = sum(1 for r in results if r.get("confidence_inversion"))
     return {
         "trials": len(results),
+        "unresolved": sum(1 for r in results if r.get("resolved") is False),
         "accuracy": wins / n,
         "inversion_rate": inversions / n,
         "mean_retracts": sum(r.get("retracts", 0) for r in results) / n,
