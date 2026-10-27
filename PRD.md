@@ -47,12 +47,15 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 | [OUTBOX-003](features/features.yml) | Task families: stale_fact, ambiguous, deadline | shipped | [`tasks`](tasks) · [`README.md`](README.md) | TBD |
 | [OUTBOX-004](features/features.yml) | Relay to inboxes + ledger.jsonl | shipped | [`src/outbox/mailbox.py`](src/outbox/mailbox.py) · [`README.md`](README.md) | TBD |
 | [OUTBOX-005](features/features.yml) | Scoring: winner, correctness, confidence inversion, retracts | shipped | [`src/outbox/score.py`](src/outbox/score.py) · [`README.md`](README.md) | FR1 |
+| [OUTBOX-006](features/features.yml) | Belt profile: handoff messages through one gapless, crash-repairable relay | partial | [`src/outbox/belt.py`](src/outbox/belt.py) · [`docs/adr/0002-belt-profile-and-claim-desk.md`](docs/adr/0002-belt-profile-and-claim-desk.md) | TBD |
+| [OUTBOX-007](features/features.yml) | Claim desk: race a draft's claims, resolve later, calibrate | partial | [`src/outbox/claimdesk.py`](src/outbox/claimdesk.py) · [`docs/adr/0002-belt-profile-and-claim-desk.md`](docs/adr/0002-belt-profile-and-claim-desk.md) | TBD |
+| [OUTBOX-008](features/features.yml) | Local end-to-end proof of the platform plan across the sibling repos | shipped | [`e2e/run.py`](e2e/run.py) · [`e2e/README.md`](e2e/README.md) | TBD |
 
 **Requirement → feature trace**
 
 | Requirement | Features |
 | --- | --- |
-| TBD | OUTBOX-001, OUTBOX-002, OUTBOX-003, OUTBOX-004 |
+| TBD | OUTBOX-001, OUTBOX-002, OUTBOX-003, OUTBOX-004, OUTBOX-006, OUTBOX-007, OUTBOX-008 |
 | FR1 | OUTBOX-005 |
 <!-- features:end -->
 

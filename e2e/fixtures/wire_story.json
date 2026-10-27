@@ -1,0 +1,32 @@
+{
+  "_note": "A fictional model-beat story for the local end-to-end proof. Quokka Labs and Q-7 do not exist; the source timeline stands in for what a scout would see re-reading each source.",
+  "idea": {
+    "title": "Quokka Labs' Q-7 ships with a 1M-token window and a license nobody can agree on",
+    "brief": "The model card, the vendor blog and the public leaderboard disagree about what Q-7 is and when its weights arrive. Report what each source says, with dates.",
+    "voice": "dateline-deadpan",
+    "author": "rhea",
+    "source_url": "https://example.org/e2e/quokka-q7"
+  },
+  "sources": {
+    "model-card": {"name": "Q-7 model card (fixture)", "url": "https://example.org/e2e/quokka-q7/model-card"},
+    "leaderboard": {"name": "Public leaderboard listing (fixture)", "url": "https://example.org/e2e/leaderboard/q7"},
+    "vendor-blog": {"name": "Quokka Labs blog (fixture)", "url": "https://example.org/e2e/quokka-labs/blog/q7"}
+  },
+  "timeline": [
+    {"tick": 0, "source": "model-card", "says": "1M tokens", "fact": "model card: context window 1M tokens"},
+    {"tick": 0, "source": "leaderboard", "says": "proprietary", "fact": "leaderboard lists Q-7 as proprietary"},
+    {"tick": 0, "source": "vendor-blog", "says": "November 4", "fact": "vendor blog: open weights on November 4"},
+    {"tick": 4, "source": "leaderboard", "says": "open weights", "fact": "leaderboard relists Q-7 as open weights", "note": "listing updated after the draft was written"},
+    {"tick": 20, "source": "vendor-blog", "says": "November 11", "fact": "vendor blog update: open weights slip to November 11", "note": "changed after publication"}
+  ],
+  "claims": [
+    {"id": "q7-context", "question": "What context window does Q-7 ship with?", "answer": "1M tokens", "sources": ["model-card"], "confidence": 0.9},
+    {"id": "q7-license", "question": "How does the public leaderboard list Q-7's license?", "answer": "proprietary", "sources": ["leaderboard"], "confidence": 0.8},
+    {"id": "q7-weights-date", "question": "When do Q-7's open weights ship?", "answer": "November 4", "sources": ["vendor-blog"], "confidence": 0.75}
+  ],
+  "truth": {
+    "q7-context": "1M tokens",
+    "q7-license": "open weights",
+    "q7-weights-date": "November 11"
+  }
+}

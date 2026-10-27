@@ -1,0 +1,11 @@
+{
+  "_note": "Synthetic scout proposals for the local end-to-end proof. Sources are example.org placeholders; nothing here is published.",
+  "scout-a": [
+    {"collection": "hack", "title": "Find the process squatting on port 8080: lsof, ss, and the flag everyone forgets", "brief": "Three commands that answer 'address already in use' on macOS and Linux, why `lsof -i :8080` misses root-owned sockets without sudo, and the one time killing the PID was the wrong fix.", "voice": "how-to-practical", "source_url": "https://example.org/e2e/ports-and-processes", "source_title": "E2E fixture: ports and processes", "rationale": "Synthetic e2e idea from scout-a."},
+    {"collection": "tool", "title": "direnv after six months: per-folder env vars without the shell-rc graveyard", "brief": "An honest review of direnv on a laptop with nine projects: what `.envrc` saved, the `direnv allow` prompt we learned to respect, and where it leaked a token into a screen share.", "voice": "tool-review-honest", "source_url": "https://example.org/e2e/direnv", "source_title": "E2E fixture: direnv", "rationale": "Synthetic e2e idea from scout-a."}
+  ],
+  "scout-b": [
+    {"collection": "hack", "title": "The cron job that ran twice: daylight saving time and the 02:30 schedule", "brief": "Why a nightly 02:30 job ran twice in November and not at all in March, how to read the gap in syslog, and the UTC-only crontab rule that ended it.", "voice": "how-to-practical", "source_url": "https://example.org/e2e/cron-dst", "source_title": "E2E fixture: cron and DST", "rationale": "Synthetic e2e idea from scout-b."},
+    {"collection": "post", "title": "We let two scouts write the same backlog and they agreed on everything, including the id", "brief": "A field note on the day two automated scouts each minted SRC-070 for different ideas, what the merge driver did about it, and why the fix was one writer, not a better lock.", "voice": "meta-confession", "source_url": "https://example.org/e2e/backlog-race", "source_title": "E2E fixture: backlog race", "rationale": "Synthetic e2e idea from scout-b."}
+  ]
+}

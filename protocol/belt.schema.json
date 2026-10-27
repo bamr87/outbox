@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bamr87/outbox/protocol/belt.schema.json",
+  "title": "Belt handoff message",
+  "description": "A stage-to-stage handoff in the belt profile (ADR 0002). Arena messages keep protocol/schema.json.",
+  "type": "object",
+  "required": ["profile", "schema_version", "type", "id", "from", "to", "kind", "subject", "trace", "created_at", "payload"],
+  "properties": {
+    "profile": { "const": "belt" },
+    "schema_version": { "const": 1 },
+    "type": { "const": "handoff" },
+    "id": { "type": "string", "minLength": 1 },
+    "from": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+    "to": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["idea", "assignment", "draft", "verdict", "approval", "published", "signal"]
+    },
+    "subject": { "type": "string", "minLength": 1, "description": "The stable key of the piece of work, e.g. a backlog fingerprint." },
+    "trace": { "type": "string", "pattern": "^[0-9a-f]{32}$", "description": "Shared by every message about one piece; the W3C trace id in the CloudEvents binding." },
+    "parent_id": { "type": ["string", "null"] },
+    "created_at": { "type": "string" },
+    "payload": { "type": "object" },
+    "ref": {
+      "type": ["object", "null"],
+      "description": "A pointer to an artifact the message is about (a file path and digest, a PR URL); bodies stay out of the message.",
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "url": { "type": "string" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "enum": ["assignment", "draft", "verdict", "approval", "published"] } } },
+      "then": { "required": ["parent_id"], "properties": { "parent_id": { "type": "string", "minLength": 1 } } }
+    }
+  ]
+}
