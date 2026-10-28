@@ -28,9 +28,35 @@ Each stage tests what is on disk: tracked files plus untracked, non-ignored ones
 | `orchestrate` | gitorio's compiler | Each line compiles to guarded Actions YAML; multi-agent lines and lifehacker.dev's blueprint do not, yet |
 | `ledger` | outbox belt | One gapless ledger traces the whole journey |
 
+## The live platform run
+
+`platform_run.py` runs the same journey with zer0-cms as the live origin instead of a file-level stand-in: the platform runs as its own Docker Compose stack (Postgres, Redis, the web role, the Celery worker and beat, the outbox relay and the belt publisher), and a person signed in to its API starts every piece of work.
+
+```bash
+python3 e2e/platform_run.py                      # build and start zer0-cms, run every stage, tear the stack down
+python3 e2e/platform_run.py --keep-up            # leave the stack on http://127.0.0.1:18000 (the studio's Outbox area included)
+python3 e2e/platform_run.py --out DIR --resume   # reuse a stack a --keep-up run left up (same --out): no build, no re-import
+python3 e2e/platform_run.py --only toolbelt harness orchestrate   # just those stages
+```
+
+| Stage | Where it runs | What it shows |
+| --- | --- | --- |
+| `platform-up`, `platform-import` | zer0-cms (compose) | The stack is healthy; a person signs in; the platform imports lifehacker.dev |
+| `sense` | zer0-cms Outbox desk | The person sends a hack idea and a Wire idea onto the belt |
+| `plan` | lifehacker.dev (`ruby:3.4`) | Its scout and Wire backlog builders mint the ids as the belt's single planner; `lint_artifacts.rb` passes |
+| `produce` | zer0-cms studio API | The person writes both pieces as draft pages: typed fields, raw front matter, file path |
+| `verify` | zer0-cms worker (outbox claim desk), lifehacker.dev gates | A claim is blocked, corrected in the platform and re-checked; the exported drafts pass lifehacker.dev's gates; the person approves |
+| `publish` | zer0-cms, then lifehacker.dev (`node:22`, Jekyll) | Publishing announces each page on the belt through the transactional outbox; the export lands on a lifehacker.dev branch with cover art; gates, build and html-proofer pass |
+| `learn` | zer0-cms worker | Claims resolve into calibration; a recheck blocks a published claim and the person signals a correction |
+| `orchestrate`, `toolbelt`, `harness` | gitorio (`node:22`), scripts (`ruby:3.4`, shellcheck), outbox (`python:3.13`) | The lines compile with their guards; the toolbelt's safety smoke; the harness's own suite |
+| `ledger` | the belt | Each piece's journey runs idea to published (and, for the dispatch, to the correction) on one gapless ledger |
+
+The host only drives HTTP and Docker, and plays the planner, drafter and verifier stations with the outbox library on the belt directory the platform shares; the platform's relay stays the belt's only writer. The run's posts, cover art and backlog entries are left uncommitted on a new lifehacker.dev branch `e2e/platform-run-<timestamp>`. They are test output: the Wire story is fictional, so that branch is never to be merged.
+
 ## Layout
 
 - `run.py` — the runner; writes `report.json`, `report.md`, the belt ledger and every adapter log under its output directory.
+- `platform_run.py` — the live platform run (above); writes `report.json`, `report.md`, the compose logs and the belt under its output directory.
 - `adapters/` — one script per sibling repo. Each takes paths as arguments, works on a copy made by `snapshot.py`, and prints one JSON summary as its last line.
 - `snapshot.py` — copies a sibling repo's working tree (or `HEAD` with `E2E_SNAPSHOT=head`) and fingerprints it, so the gitorio compiler cache refreshes when the tree changes.
 - `fixtures/` — synthetic scout ideas, a fictional Wire story with a source timeline, and the post templates the drafter fills.
