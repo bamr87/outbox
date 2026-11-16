@@ -119,7 +119,7 @@ Every document is indexed, one line each, in [docs/README.md](docs/README.md): t
 | `agents/` | System cards for live Grok Bots and the group kickoff |
 | `protocol/` | JSON Schema for messages |
 | `tests/` | The offline unittest suite |
-| `tools/` | Documentation generators |
+| `tools/` | Documentation generators and the vendored Markdown unwrapper |
 | `docs/` | The docs index, ADRs and the generated CLI reference |
 
 [`SCHEMA.md`](SCHEMA.md) is the placement contract for each of them.
