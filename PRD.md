@@ -8,6 +8,22 @@ Derived from the README, agent docs, config and code in [`bamr87/outbox`](https:
 
 A measurable harness for competitive asynchronous outbound messaging among three agents. Agents may only publish by writing immutable outbox records; peers never mutate each other's memory. A filesystem inbox/outbox, injected environment lag, a confidence race and a replay scorer judge who published what, when, with what confidence, and whether they were right.
 
+## 1.1 Missions
+
+Outbox's direction is to become the ultimate open home for all things competitive agent messaging — data, tools, resources and transparency, gathered in one place that anyone can inspect and reuse.
+
+1. **Provide data, tools, resources and transparency for all stakeholders, multi-agent researchers and practitioners, and the general public.** Analysts, harness authors, agent builders and anyone curious about how agents argue in the open are first-class audiences. The aim is a shared, inspectable commons: the same protocol, the same traces, and the same scoring rules for everyone.
+2. **Make every outbound message immutable, every peer exchange inbox-only, and every race replayable and auditable.** Agents publish only by writing immutable outbox records; peers never mutate each other's memory. A filesystem inbox and outbox, injected environment lag, a confidence race and a replay scorer judge who published what, when, with what confidence, and whether they were right.
+3. **Expose failure modes in the open — stale facts, confidence inversion, lag-window misses — through a reproducible offline harness and a strict message protocol anyone can run and inspect.** Policy bots stand in for live agents so the suite needs no network and no key, and the protocol itself remains the contract.
+
+These missions set the course; they do not claim the work is finished. They serve the PRD goals: a reproducible offline suite, visible failure modes, and a strict message protocol.
+
+**Requirement**
+
+- MR1: Constitution §1 states one direction statement and exactly three numbered missions, and the README and AGENTS.md taglines match that direction and link to constitution §1.
+
+Feature [OUTBOX-009](features/features.yml) traces to requirement MR1.
+
 ## 2. Target users
 
 - Researchers/engineers evaluating multi-agent coordination and calibration
@@ -50,6 +66,7 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 | [OUTBOX-006](features/features.yml) | Belt profile: handoff messages through one gapless, crash-repairable relay | partial | [`src/outbox/belt.py`](src/outbox/belt.py) · [`docs/adr/0002-belt-profile-and-claim-desk.md`](docs/adr/0002-belt-profile-and-claim-desk.md) | TBD |
 | [OUTBOX-007](features/features.yml) | Claim desk: race a draft's claims, resolve later, calibrate | partial | [`src/outbox/claimdesk.py`](src/outbox/claimdesk.py) · [`docs/adr/0002-belt-profile-and-claim-desk.md`](docs/adr/0002-belt-profile-and-claim-desk.md) | TBD |
 | [OUTBOX-008](features/features.yml) | Local end-to-end proof of the platform plan across the sibling repos | shipped | [`e2e/run.py`](e2e/run.py) · [`e2e/README.md`](e2e/README.md) | TBD |
+| [OUTBOX-009](features/features.yml) | Constitution missions | planned | [`docs/constitution.md`](docs/constitution.md) · [`PRD.md`](PRD.md) | MR1 |
 
 **Requirement → feature trace**
 
@@ -57,6 +74,7 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 | --- | --- |
 | TBD | OUTBOX-001, OUTBOX-002, OUTBOX-003, OUTBOX-004, OUTBOX-006, OUTBOX-007, OUTBOX-008 |
 | FR1 | OUTBOX-005 |
+| MR1 | OUTBOX-009 |
 <!-- features:end -->
 
 ## 5. Requirements

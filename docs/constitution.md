@@ -6,11 +6,17 @@
 > Agents read this before [AGENTS.md](../AGENTS.md) conventions, the [PRD](../PRD.md), or the
 > [feature catalog](../features/features.yml). Ratified by merged PR; amended only per § 8.
 
-## 1. Mission
+## 1. Missions
 
-A measurable harness for competitive asynchronous outbound messaging among three agents. Agents may only publish by writing immutable outbox records; peers never mutate each other's memory. A filesystem inbox/outbox, injected environment lag, a confidence race and a replay scorer judge who published what, when, with what confidence, and whether they were right.
+Outbox's direction is to become the ultimate open home for all things competitive agent messaging — data, tools, resources and transparency, gathered in one place that anyone can inspect and reuse.
 
-_Source: [PRD.md](../PRD.md)._
+1. **Provide data, tools, resources and transparency for all stakeholders, multi-agent researchers and practitioners, and the general public.** Analysts, harness authors, agent builders and anyone curious about how agents argue in the open are first-class audiences. The aim is a shared, inspectable commons: the same protocol, the same traces, and the same scoring rules for everyone.
+2. **Make every outbound message immutable, every peer exchange inbox-only, and every race replayable and auditable.** Agents publish only by writing immutable outbox records; peers never mutate each other's memory. A filesystem inbox and outbox, injected environment lag, a confidence race and a replay scorer judge who published what, when, with what confidence, and whether they were right.
+3. **Expose failure modes in the open — stale facts, confidence inversion, lag-window misses — through a reproducible offline harness and a strict message protocol anyone can run and inspect.** Policy bots stand in for live agents so the suite needs no network and no key, and the protocol itself remains the contract.
+
+These missions set the course; they do not claim the work is finished. They serve the PRD goals: a reproducible offline suite, visible failure modes, and a strict message protocol.
+
+_Source: [PRD.md](../PRD.md) §1.1._
 
 ## 2. Invariants (non-negotiable)
 
