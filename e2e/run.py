@@ -33,10 +33,11 @@ import subprocess
 import sys
 import time
 import traceback
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from string import Template
-from typing import Any, Callable
+from typing import Any
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "src"))
@@ -48,7 +49,7 @@ from snapshot import copy as copy_working_tree, state as repo_state  # noqa: E40
 
 STATIONS = ("scout-a", "scout-b", "wire-scout", "planner", "drafter", "verifier", "editor", "publisher", "learner")
 REPOS = ("outbox", "scripts", "lifehacker.dev", "zer0-cms", "gitorio")
-TODAY = datetime.now(timezone.utc).date()
+TODAY = datetime.now(UTC).date()
 
 
 # --------------------------------------------------------------------------- helpers
@@ -85,7 +86,9 @@ class Run:
     def repo(self, name: str) -> Path:
         return self.projects / name
 
-    def adapter(self, script: str, *args: Any, timeout: int = 2400, env: dict[str, str] | None = None) -> dict[str, Any]:
+    def adapter(
+        self, script: str, *args: Any, timeout: int = 2400, env: dict[str, str] | None = None
+    ) -> dict[str, Any]:
         log_dir = self.out / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
         started = time.time()
@@ -174,17 +177,28 @@ def stage_outbox_tests(run: Run) -> dict[str, Any]:
     )
     tail = proc.stderr.strip().splitlines()[-3:]
     ran = re.search(r"Ran (\d+) tests", proc.stderr)
-    return {"status": "pass" if proc.returncode == 0 else "fail", "tests": int(ran.group(1)) if ran else 0, "tail": tail}
+    return {
+        "status": "pass" if proc.returncode == 0 else "fail",
+        "tests": int(ran.group(1)) if ran else 0,
+        "tail": tail,
+    }
 
 
 def stage_toolbelt(run: Run) -> dict[str, Any]:
     summary = run.adapter("scripts_toolbelt.sh", run.repo("scripts"), run.out / "toolbelt")
     # The safety contract the plan's Phase 0 restored: --help is side-effect free and
     # CREATE_GITHUB_REPO=false never reaches `gh repo create`.
-    unsafe = [f for f in summary.get("findings", []) if f.get("rule") in ("help-fails", "help-has-side-effects", "ignores-CREATE_GITHUB_REPO=false")]
+    unsafe = [
+        f
+        for f in summary.get("findings", [])
+        if f.get("rule") in ("help-fails", "help-has-side-effects", "ignores-CREATE_GITHUB_REPO=false")
+    ]
     return {
         "status": "pass" if summary.get("shellcheck_clean") and summary.get("_exit") == 0 and not unsafe else "fail",
-        "summary": {k: summary.get(k) for k in ("shellcheck_clean", "forkme_metadata_dry_run", "zer0_site_type_supported", "gh_calls_attempted")},
+        "summary": {
+            k: summary.get(k)
+            for k in ("shellcheck_clean", "forkme_metadata_dry_run", "zer0_site_type_supported", "gh_calls_attempted")
+        },
         "findings": summary.get("findings", []),
     }
 
@@ -255,19 +269,37 @@ def stage_plan(run: Run) -> dict[str, Any]:
             "assignment",
             "planner",
             ["drafter", "ledger"],
-            {"backlog_id": backlog_id, "kind": msg.payload["collection"], "title": msg.payload["title"],
-             "draft_now": msg is hack},
+            {
+                "backlog_id": backlog_id,
+                "kind": msg.payload["collection"],
+                "title": msg.payload["title"],
+                "draft_now": msg is hack,
+            },
         )
         run.send("planner", assignment)
         assignments.append(backlog_id)
     for msg in wire:
         run.send(
             "planner",
-            msg.reply("assignment", "planner", ["drafter", "ledger"],
-                      {"backlog_id": "WIRE-E2E-001", "kind": "wire", "title": msg.payload["title"], "author": "rhea", "draft_now": True}),
+            msg.reply(
+                "assignment",
+                "planner",
+                ["drafter", "ledger"],
+                {
+                    "backlog_id": "WIRE-E2E-001",
+                    "kind": "wire",
+                    "title": msg.payload["title"],
+                    "author": "rhea",
+                    "draft_now": True,
+                },
+            ),
         )
     run.belt.deliver()
-    belt_ok = bool(race.get("belt")) and not race["belt"].get("duplicate_ids") and race["belt"].get("lint_artifacts_exit") == 0
+    belt_ok = (
+        bool(race.get("belt"))
+        and not race["belt"].get("duplicate_ids")
+        and race["belt"].get("lint_artifacts_exit") == 0
+    )
     branches_collide = bool((race.get("branches") or {}).get("same_ids_minted"))
     return {
         "status": "pass" if belt_ok and len(minted) == len(content) else "fail",
@@ -288,9 +320,25 @@ def draw_preview(run: Run, rel: str) -> list[str]:
     previews = site / "assets" / "images" / "previews"
     before = set(previews.glob("*")) if previews.exists() else set()
     subprocess.run(
-        ["docker", "run", "--rm", "--network=none", "-v", f"{site}:/repo", "-w", "/repo", "node:22-slim",
-         "node", "scripts/preview/generate.mjs", "-f", rel],
-        capture_output=True, text=True, check=True, timeout=300,
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--network=none",
+            "-v",
+            f"{site}:/repo",
+            "-w",
+            "/repo",
+            "node:22-slim",
+            "node",
+            "scripts/preview/generate.mjs",
+            "-f",
+            rel,
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=300,
     )
     return sorted(str(p.relative_to(site)) for p in set(previews.glob("*")) - before)
 
@@ -301,7 +349,7 @@ def write_wire_post(run: Run, claims: list[dict[str, Any]], revision: int) -> Pa
     site = run.state["site"]
     rel = run.state.setdefault("wire_rel", f"pages/_posts/wire/{TODAY.isoformat()}-quokka-q7-e2e.md")
     claims_yaml = "\n".join(
-        f"  - id: {c['id']}\n    question: \"{c['question']}\"\n    answer: \"{c['answer']}\"\n"
+        f'  - id: {c["id"]}\n    question: "{c["question"]}"\n    answer: "{c["answer"]}"\n'
         f"    confidence: {c['confidence']}\n    sources: [{', '.join(c['sources'])}]"
         for c in claims
     )
@@ -340,7 +388,13 @@ def stage_produce(run: Run) -> dict[str, Any]:
             claims = [dict(c) for c in story["claims"]]
             run.state["wire_claims"] = claims
             path = write_wire_post(run, claims, revision=1)
-            payload = {"kind": "wire", "author": "rhea", "tier": "factual", "backlog_id": a.payload["backlog_id"], "claims": [c["id"] for c in claims]}
+            payload = {
+                "kind": "wire",
+                "author": "rhea",
+                "tier": "factual",
+                "backlog_id": a.payload["backlog_id"],
+                "claims": [c["id"] for c in claims],
+            }
             run.state["wire_assignment"] = a
         else:
             title = a.payload["title"]
@@ -352,7 +406,9 @@ def stage_produce(run: Run) -> dict[str, Any]:
             payload = {"kind": "hack", "author": "edge", "tier": "low-risk", "backlog_id": a.payload["backlog_id"]}
             run.state["hack_rel"] = rel
         rel_path = str(path.relative_to(site))
-        draft = a.reply("draft", "drafter", ["verifier", "ledger"], payload, ref={"path": rel_path, "sha256": sha256(path)})
+        draft = a.reply(
+            "draft", "drafter", ["verifier", "ledger"], payload, ref={"path": rel_path, "sha256": sha256(path)}
+        )
         run.send("drafter", draft)
         drafts.append({"kind": payload["kind"], "path": rel_path})
     run.belt.deliver()
@@ -373,7 +429,9 @@ def gate_files(run: Run, tag: str, files: list[str], env: dict[str, str] | None 
                 if any(f in str(row.get("file") or "") for f in files):
                     findings.append({k: row.get(k) for k in ("check_id", "severity", "rule", "file", "evidence")})
     return {
-        "adapter": {k: summary.get(k) for k in ("ok", "gate", "scoped", "checks_run", "checks_skipped", "by_severity", "_exit")},
+        "adapter": {
+            k: summary.get(k) for k in ("ok", "gate", "scoped", "checks_run", "checks_skipped", "by_severity", "_exit")
+        },
         "ok": bool(summary.get("ok")),
         "new_file_findings": findings,
         "blocking": summary.get("errors") or [],
@@ -399,9 +457,19 @@ def stage_verify(run: Run) -> dict[str, Any]:
     byline_enforced = any(f["rule"] == "wrong-desk-byline" for f in gates_decoy["new_file_findings"])
 
     desk_first = check_claims(run.state["wire_claims"], story["timeline"], run.out / "desk" / "first")
-    rounds = [{"round": 1, "pass": desk_first["pass"], "claims": [{k: c[k] for k in ("claim_id", "verdict", "reason", "draft_answer", "supported_answer")} for c in desk_first["claims"]]}]
-    block = wire_draft.reply("verdict", "verifier", ["drafter", "learner", "ledger"],
-                             {"verdict": "block", "desk": rounds[0]["claims"]})
+    rounds = [
+        {
+            "round": 1,
+            "pass": desk_first["pass"],
+            "claims": [
+                {k: c[k] for k in ("claim_id", "verdict", "reason", "draft_answer", "supported_answer")}
+                for c in desk_first["claims"]
+            ],
+        }
+    ]
+    block = wire_draft.reply(
+        "verdict", "verifier", ["drafter", "learner", "ledger"], {"verdict": "block", "desk": rounds[0]["claims"]}
+    )
     run.send("verifier", block)
     run.belt.deliver()
 
@@ -418,8 +486,13 @@ def stage_verify(run: Run) -> dict[str, Any]:
                         claim["confidence"] = 0.85
                         corrected.append(claim["id"])
     path = write_wire_post(run, claims, revision=2)
-    redraft = verdicts[0].reply("draft", "drafter", ["verifier", "ledger"], {**wire_draft.payload, "revision": 2, "corrected": corrected},
-                                ref={"path": str(path.relative_to(run.state["site"])), "sha256": sha256(path)})
+    redraft = verdicts[0].reply(
+        "draft",
+        "drafter",
+        ["verifier", "ledger"],
+        {**wire_draft.payload, "revision": 2, "corrected": corrected},
+        ref={"path": str(path.relative_to(run.state["site"])), "sha256": sha256(path)},
+    )
     run.send("drafter", redraft)
     run.belt.deliver()
     run.belt.station("verifier").receive(kinds=("draft",))
@@ -427,18 +500,60 @@ def stage_verify(run: Run) -> dict[str, Any]:
     gates_second = gate_files(run, "second", files)
     desk_second = check_claims(claims, story["timeline"], run.out / "desk" / "second")
     run.state["desk_second"] = desk_second
-    rounds.append({"round": 2, "pass": desk_second["pass"], "claims": [{k: c[k] for k in ("claim_id", "verdict", "reason", "draft_answer", "supported_answer")} for c in desk_second["claims"]]})
+    rounds.append(
+        {
+            "round": 2,
+            "pass": desk_second["pass"],
+            "claims": [
+                {k: c[k] for k in ("claim_id", "verdict", "reason", "draft_answer", "supported_answer")}
+                for c in desk_second["claims"]
+            ],
+        }
+    )
 
-    hack_ok = gates_second["ok"] and not [f for f in gates_second["blocking"] if hack_draft.ref["path"] in str(f.get("file"))]
-    wire_ok = desk_second["pass"] and gates_second["ok"] and not [f for f in gates_second["blocking"] if wire_draft.ref["path"] in str(f.get("file"))]
-    # Merge by risk tier (decision D1): low-risk content goes straight to the publisher; factual content needs an editor.
-    run.send("verifier", hack_draft.reply("verdict", "verifier", ["publisher", "ledger"], {"verdict": "pass" if hack_ok else "block", "tier": "low-risk"}))
-    run.send("verifier", redraft.reply("verdict", "verifier", ["editor", "learner", "ledger"], {"verdict": "pass" if wire_ok else "block", "tier": "factual"}))
+    hack_ok = gates_second["ok"] and not [
+        f for f in gates_second["blocking"] if hack_draft.ref["path"] in str(f.get("file"))
+    ]
+    wire_ok = (
+        desk_second["pass"]
+        and gates_second["ok"]
+        and not [f for f in gates_second["blocking"] if wire_draft.ref["path"] in str(f.get("file"))]
+    )
+    # Merge by risk tier (decision D1): low-risk content goes straight to the publisher;
+    # factual content needs an editor.
+    run.send(
+        "verifier",
+        hack_draft.reply(
+            "verdict",
+            "verifier",
+            ["publisher", "ledger"],
+            {"verdict": "pass" if hack_ok else "block", "tier": "low-risk"},
+        ),
+    )
+    run.send(
+        "verifier",
+        redraft.reply(
+            "verdict",
+            "verifier",
+            ["editor", "learner", "ledger"],
+            {"verdict": "pass" if wire_ok else "block", "tier": "factual"},
+        ),
+    )
     run.belt.deliver()
     for v in run.belt.station("editor").receive(kinds=("verdict",)):
         if v.payload["verdict"] == "pass":
-            run.send("editor", v.reply("approval", "editor", ["publisher", "ledger"],
-                                       {"by": "simulated-human", "note": "The e2e stands in for the human merge a factual piece requires."}))
+            run.send(
+                "editor",
+                v.reply(
+                    "approval",
+                    "editor",
+                    ["publisher", "ledger"],
+                    {
+                        "by": "simulated-human",
+                        "note": "The e2e stands in for the human merge a factual piece requires.",
+                    },
+                ),
+            )
     run.belt.deliver()
     return {
         "status": "pass" if hack_ok and wire_ok and not desk_first["pass"] and byline_enforced else "fail",
@@ -462,8 +577,12 @@ def stage_publish(run: Run) -> dict[str, Any]:
         hit = next((p for p in build.get("posts") or [] if p.get("source") == rel), {})
         rendered[kind] = {"url": hit.get("url"), "exists": hit.get("exists"), "title_found": hit.get("title_found")}
     # Full `verify` parity: the same harness again, now with the built site, so html-proofer checks every link.
-    proofed = gate_files(run, "with-site", [p for p in posts.values() if p],
-                         env={"LH_SITE_DIR": str(site_dir), "LH_BUILD_RC": "0" if build.get("ok") else "1"})
+    proofed = gate_files(
+        run,
+        "with-site",
+        [p for p in posts.values() if p],
+        env={"LH_SITE_DIR": str(site_dir), "LH_BUILD_RC": "0" if build.get("ok") else "1"},
+    )
     roundtrip = run.adapter("zer0cms_roundtrip.sh", site, run.out / "zer0cms")
     events = run.out / "events.jsonl"
     published = []
@@ -483,7 +602,20 @@ def stage_publish(run: Run) -> dict[str, Any]:
         "verify_with_site": {k: proofed[k] for k in ("ok", "adapter", "blocking")},
         "rendered": rendered,
         "published": published,
-        "zer0cms_roundtrip": {k: roundtrip.get(k) for k in ("ok", "files_total", "files_identical", "files_different", "files_unsupported", "diff_samples", "events", "_exit", "error")},
+        "zer0cms_roundtrip": {
+            k: roundtrip.get(k)
+            for k in (
+                "ok",
+                "files_total",
+                "files_identical",
+                "files_different",
+                "files_unsupported",
+                "diff_samples",
+                "events",
+                "_exit",
+                "error",
+            )
+        },
     }
 
 
@@ -508,14 +640,25 @@ def stage_learn(run: Run) -> dict[str, Any]:
         }
         row["fingerprint"] = fingerprint(row["check_id"], str(row["file"]), row["rule"], c["claim_id"])
         append_jsonl(findings, row)
-        signal = Handoff(kind="signal", from_station="learner", to=["planner", "ledger"], subject=c["claim_id"],
-                         trace=run.state["wire_trace"], payload={"signal": "correction", **row})
+        signal = Handoff(
+            kind="signal",
+            from_station="learner",
+            to=["planner", "ledger"],
+            subject=c["claim_id"],
+            trace=run.state["wire_trace"],
+            payload={"signal": "correction", **row},
+        )
         run.send("learner", signal)
         signals.append(row["evidence"])
     run.belt.deliver()
     corrections = []
     for sig in run.belt.station("planner").receive(kinds=("signal",)):
-        msg = sig.reply("assignment", "planner", ["drafter", "ledger"], {"kind": "correction", "backlog_id": "WIRE-E2E-001", "claim": sig.subject})
+        msg = sig.reply(
+            "assignment",
+            "planner",
+            ["drafter", "ledger"],
+            {"kind": "correction", "backlog_id": "WIRE-E2E-001", "claim": sig.subject},
+        )
         run.send("planner", msg)
         corrections.append(sig.subject)
     run.belt.deliver()
@@ -524,7 +667,9 @@ def stage_learn(run: Run) -> dict[str, Any]:
         "status": "pass" if stale and corrections else "fail",
         "resolutions": resolutions,
         "calibration": cal,
-        "post_publish_recheck": [{k: c[k] for k in ("claim_id", "verdict", "draft_answer", "supported_answer")} for c in recheck["claims"]],
+        "post_publish_recheck": [
+            {k: c[k] for k in ("claim_id", "verdict", "draft_answer", "supported_answer")} for c in recheck["claims"]
+        ],
         "correction_assignments": corrections,
     }
 
@@ -539,17 +684,25 @@ def stage_orchestrate(run: Run) -> dict[str, Any]:
         out = run.out / "gitorio" / slugify(name)
         summary = run.adapter("gitorio_compile.sh", bp, out)
         results[name] = {k: summary.get(k) for k in ("ok", "workflows", "errors", "guards", "_exit")}
-        # A line woken by repository_dispatch must check its payload before anything else runs (only the number crosses).
+        # A line woken by repository_dispatch must check its payload before anything else runs
+        # (only the number crosses).
         if '"trigger.repository_dispatch"' in bp.read_text():
             results[name]["payload_checked"] = any("dispatch.payload" in y.read_text() for y in out.glob("*.yml"))
     ours_ok = all(r["ok"] for n, r in results.items() if not n.startswith("lifehacker.dev:"))
     lh_ok = next((r["ok"] for n, r in results.items() if n.startswith("lifehacker.dev:")), None)
-    return {"status": "pass" if ours_ok and results else "fail", "lifehacker_issue_factory_compiles": lh_ok, "compiles": results}
+    return {
+        "status": "pass" if ours_ok and results else "fail",
+        "lifehacker_issue_factory_compiles": lh_ok,
+        "compiles": results,
+    }
 
 
 def stage_ledger(run: Run) -> dict[str, Any]:
     summary = write_belt_summary(run.belt, run.out / "belt-summary.json")
-    journey = [{"seq": r["seq"], "from": r["from"], "kind": r["kind"], "to": r["to"]} for r in run.belt.journey(run.state.get("wire_trace", ""))]
+    journey = [
+        {"seq": r["seq"], "from": r["from"], "kind": r["kind"], "to": r["to"]}
+        for r in run.belt.journey(run.state.get("wire_trace", ""))
+    ]
     ok = summary["seq_gapless"] and summary["ids_unique"] and summary["dead_letters"] == 0
     return {"status": "pass" if ok else "fail", "belt": summary, "wire_journey": journey}
 
@@ -573,7 +726,7 @@ def write_report(run: Run) -> dict[str, Any]:
     counts: dict[str, int] = {}
     for s in run.stages:
         counts[s["status"]] = counts.get(s["status"], 0) + 1
-    report = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "counts": counts, "stages": run.stages}
+    report = {"generated_at": datetime.now(UTC).isoformat(timespec="seconds"), "counts": counts, "stages": run.stages}
     write_json(run.out / "report.json", report)
     lines = ["# Outbox-Lifehack end-to-end proof", "", f"> Generated {report['generated_at']}; {counts}.", ""]
     lines += ["| Stage | Result | Seconds | What it shows |", "| --- | --- | --- | --- |"]
@@ -586,7 +739,9 @@ def write_report(run: Run) -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--projects", default=str(HERE.parents[1]), help="directory holding the sibling repos")
-    parser.add_argument("--out", default=str(HERE.parent / "runs" / ("e2e-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"))))
+    parser.add_argument(
+        "--out", default=str(HERE.parent / "runs" / ("e2e-" + datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")))
+    )
     parser.add_argument("--skip", nargs="*", default=[], help="stage names to skip")
     args = parser.parse_args(argv)
     out = Path(args.out).resolve()

@@ -133,6 +133,14 @@ python3 tools/gen_cli_reference.py --write
 python3 tools/docs_index.py --write
 ```
 
+CI also lints and format-checks the Python with ruff, configured in `pyproject.toml`. ruff and pytest are dev tools, never runtime dependencies:
+
+```bash
+python3 -m pip install ruff pytest
+ruff check . && ruff format --check .    # ruff format . applies the formatting
+pytest -q                                # the unit tests again, as the shared CI gate runs them
+```
+
 Commands, conventions and the trial rules for humans and AI agents live in [AGENTS.md](AGENTS.md).
 
 ## Contributing

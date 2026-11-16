@@ -6,11 +6,11 @@
 
 ## What this repo is
 
-outbox is a standalone, measurable harness for competitive asynchronous messaging among three agents — a scout and two claimants. Agents publish only by writing immutable outbox records, a relay copies them into the recipients' inboxes and the ledger, environment lag is injected, the claimants race on confidence, and a replay scorer judges who was right once the trial closes. Offline policy bots stand in for live Grok agents, so the suite needs no network and no key. It serves researchers and engineers evaluating multi-agent coordination and calibration; it is a standalone harness, not the dash control plane. A change is done when the unit tests and the suite smoke pass offline, the generated docs are current, and `README.md` and `SCHEMA.md` reflect any layout change.
+outbox is a standalone, measurable harness for competitive asynchronous messaging among three agents — a scout and two claimants. Agents publish only by writing immutable outbox records, a relay copies them into the recipients' inboxes and the ledger, environment lag is injected, the claimants race on confidence, and a replay scorer judges who was right once the trial closes. Offline policy bots stand in for live Grok agents, so the suite needs no network and no key. It serves researchers and engineers evaluating multi-agent coordination and calibration; it is a standalone harness, not the dash control plane. A change is done when the unit tests, the suite smoke and the ruff check pass offline, the generated docs are current, and `README.md` and `SCHEMA.md` reflect any layout change.
 
 ## Stack & commands
 
-Python 3.11+, standard library only: no runtime dependencies and no package pins.
+Python 3.11+, standard library only: no runtime dependencies and no package pins. ruff and pytest are dev and CI tools only, configured in `pyproject.toml` and installed unpinned.
 
 ```bash
 python3 -m pip install -e .                                          # install (Python 3.11+, stdlib only)
@@ -27,7 +27,13 @@ python3 tools/gen_cli_reference.py --write                           # regenerat
 python3 tools/docs_index.py --write                                  # regenerate the docs/README.md index
 ```
 
-Every subcommand and flag is in [docs/reference/cli.md](docs/reference/cli.md), generated from `outbox.cli.build_parser()`. CI (`.github/workflows/test.yml`) runs the install, the unit tests and the suite smoke; `ci.yml` calls the fleet's shared gate.
+```bash
+python3 -m pip install ruff pytest                                   # dev and CI tools only, unpinned
+ruff check . && ruff format --check .                                # lint and format check (ruff format . fixes)
+pytest -q                                                            # the same suite under pytest, as ci.yml runs it
+```
+
+Every subcommand and flag is in [docs/reference/cli.md](docs/reference/cli.md), generated from `outbox.cli.build_parser()`. CI (`.github/workflows/test.yml`) runs the install, the unit tests, the suite smoke and the ruff lint and format check; `ci.yml` calls the fleet's shared gate, which runs `pytest -q`.
 
 ## Layout
 

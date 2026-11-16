@@ -16,6 +16,6 @@
 | `verify/` | User scenarios and the runner for the fleet verify gate | — |
 | `public/` | The vendored fleet page-feedback widget | Hand edits to the vendored scripts |
 | `runs/` | Local trial output (gitignored) | Committed fixtures unless under `tests/` |
-| `.github/workflows/` | Offline unit + suite smoke | Deploy |
+| `.github/workflows/` | Offline unit tests, suite smoke and ruff lint | Deploy |
 
 New directories need a row here in the same change.

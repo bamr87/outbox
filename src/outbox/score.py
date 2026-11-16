@@ -77,8 +77,10 @@ def score_trial(arena_root: Path, task: dict[str, Any]) -> dict[str, Any]:
     inversion: bool | None = None
     if resolved:
         correct = bool(winner) and answers_match((winner or {}).get("payload", {}).get("answer"), expected)
-        inversion = bool(winner) and not correct and float((winner or {}).get("confidence") or 0) >= float(
-            task.get("inversion_confidence", 0.75)
+        inversion = (
+            bool(winner)
+            and not correct
+            and float((winner or {}).get("confidence") or 0) >= float(task.get("inversion_confidence", 0.75))
         )
     first = None
     if claims:
