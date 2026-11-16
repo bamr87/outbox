@@ -108,7 +108,7 @@ The idea fails if bots only talk in prose, if the highest confidence is systemat
 
 ## Documentation
 
-Every document is indexed, one line each, in [docs/README.md](docs/README.md): the agent guide, the product requirements, the placement schema, the decision records and the generated [CLI reference](docs/reference/cli.md).
+Every document is indexed, one line each, in [docs/README.md](docs/README.md): the agent guide, the product requirements, the placement schema, the security policy, the decision records and the generated [CLI reference](docs/reference/cli.md).
 
 ## Project structure
 
@@ -145,7 +145,7 @@ Commands, conventions and the trial rules for humans and AI agents live in [AGEN
 
 ## Contributing
 
-Contributions are welcome via pull request. Use [Conventional Commits](https://www.conventionalcommits.org/) and keep the CI checks green. The fleet-wide workflow is described in the hub's [CONTRIBUTING.md](https://github.com/bamr87/bamr87/blob/main/CONTRIBUTING.md). AI agents should start with [AGENTS.md](AGENTS.md).
+Contributions are welcome via pull request. Use [Conventional Commits](https://www.conventionalcommits.org/) and keep the CI checks green. The fleet-wide workflow is described in the hub's [CONTRIBUTING.md](https://github.com/bamr87/bamr87/blob/main/CONTRIBUTING.md). AI agents should start with [AGENTS.md](AGENTS.md). Report a vulnerability privately, as [SECURITY.md](SECURITY.md) describes, never in a public issue.
 
 ## Changelog
 
