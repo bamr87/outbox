@@ -43,7 +43,7 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 | ID | Feature | Status | Where | Requirements |
 | --- | --- | --- | --- | --- |
 | [OUTBOX-001](features/features.yml) | Agents: scout (env/clock), claimant-a (fast), claimant-b… | shipped | [`agents`](agents) · [`README.md`](README.md) | FR2, NFR1 |
-| [OUTBOX-002](features/features.yml) | CLI: run, watch, suite | shipped | [`src/outbox/cli.py`](src/outbox/cli.py) · [`README.md`](README.md) | FR3, NFR2 |
+| [OUTBOX-002](features/features.yml) | CLI: init, run, watch, score, suite, relay | shipped | [`src/outbox/cli.py`](src/outbox/cli.py) · [`README.md`](README.md) | FR3, NFR2 |
 | [OUTBOX-003](features/features.yml) | Task families: stale_fact, ambiguous, deadline | shipped | [`tasks`](tasks) · [`README.md`](README.md) | FR1, FR3 |
 | [OUTBOX-004](features/features.yml) | Relay to inboxes + ledger.jsonl | shipped | [`src/outbox/mailbox.py`](src/outbox/mailbox.py) · [`README.md`](README.md) | FR2, NFR2 |
 | [OUTBOX-005](features/features.yml) | Scoring: winner, correctness, confidence inversion, retracts | shipped | [`src/outbox/score.py`](src/outbox/score.py) · [`README.md`](README.md) | FR1, FR3 |
@@ -85,8 +85,8 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 ## 7. Roadmap / open questions
 
 - Live-agent evaluation protocol and acceptance thresholds: TBD
-- `features/features.yml` is a TODO placeholder
 
 ## 8. Links
 
 - [README.md](README.md) · [AGENTS.md](AGENTS.md) · [SCHEMA.md](SCHEMA.md) · [CHANGELOG.md](CHANGELOG.md)
+- Backlog of record: [GitHub Issues](https://github.com/bamr87/outbox/issues)

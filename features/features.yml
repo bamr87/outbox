@@ -27,8 +27,8 @@ features:
     link: "agents"
     docs: "README.md"
   - id: OUTBOX-002
-    title: "CLI: run, watch, suite"
-    description: "CLI: `run`, `watch`, `suite`"
+    title: "CLI: init, run, watch, score, suite, relay"
+    description: "CLI: `init`, `run`, `watch`, `score`, `suite`, `relay` (flags in docs/reference/cli.md)"
     implemented: true
     status: shipped
     prd: [FR3, NFR2]
