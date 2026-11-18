@@ -45,7 +45,7 @@ class Message:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Message":
+    def from_dict(cls, data: dict[str, Any]) -> Message:
         payload = dict(data)
         if "from" in payload and "from_agent" not in payload:
             payload["from_agent"] = payload.pop("from")

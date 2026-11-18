@@ -33,7 +33,9 @@ class BeltTests(unittest.TestCase):
         self._tmp.cleanup()
 
     def test_handoff_reaches_inbox_and_ledger_in_one_trace(self):
-        idea = Handoff(kind="idea", from_station="scout", to=["planner", "ledger"], subject="fp-1", payload={"title": "x"})
+        idea = Handoff(
+            kind="idea", from_station="scout", to=["planner", "ledger"], subject="fp-1", payload={"title": "x"}
+        )
         self.belt.station("scout").send(idea)
         self.belt.deliver()
         taken = self.belt.station("planner").receive()
@@ -87,7 +89,9 @@ class BeltTests(unittest.TestCase):
 
     def test_concurrent_senders_and_relays_never_duplicate_or_lose_a_message(self):
         ctx = multiprocessing.get_context("spawn")
-        senders = [ctx.Process(target=_send_many, args=(str(self.root), s, 25)) for s in ("scout", "drafter", "verifier")]
+        senders = [
+            ctx.Process(target=_send_many, args=(str(self.root), s, 25)) for s in ("scout", "drafter", "verifier")
+        ]
         relays = [ctx.Process(target=_relay_loop, args=(str(self.root), 30)) for _ in range(3)]
         for proc in senders + relays:
             proc.start()
