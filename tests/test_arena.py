@@ -55,8 +55,20 @@ class ArenaTests(unittest.TestCase):
     def test_summarize_shape(self):
         summary = summarize(
             [
-                {"correct": True, "confidence_inversion": False, "retracts": 1, "winner": {"from": "a"}, "first_claim_from": "a"},
-                {"correct": False, "confidence_inversion": True, "retracts": 0, "winner": {"from": "a"}, "first_claim_from": "a"},
+                {
+                    "correct": True,
+                    "confidence_inversion": False,
+                    "retracts": 1,
+                    "winner": {"from": "a"},
+                    "first_claim_from": "a",
+                },
+                {
+                    "correct": False,
+                    "confidence_inversion": True,
+                    "retracts": 0,
+                    "winner": {"from": "a"},
+                    "first_claim_from": "a",
+                },
             ]
         )
         self.assertEqual(summary["trials"], 2)

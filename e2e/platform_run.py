@@ -45,10 +45,11 @@ import traceback
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from string import Template
-from typing import Any, Callable
+from typing import Any
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "src"))
@@ -57,7 +58,7 @@ sys.path.insert(0, str(HERE))
 from outbox.belt import Station  # noqa: E402
 from snapshot import copy as copy_working_tree, state as repo_state  # noqa: E402
 
-NOW = datetime.now(timezone.utc)
+NOW = datetime.now(UTC)
 TODAY = NOW.date()
 PROJECT = "e2e-zer0"
 SITE_KEY = "lifehacker"
@@ -86,7 +87,12 @@ class Platform:
         self.belt_root = self.belt_dir / "belt"  # its OUTBOX_BELT_ROOT
         self.export_dir = self.out / "export"
         self.override = self.out / "compose.e2e.yml"
-        self.env = {**os.environ, "SITES_DIR": str(projects), "CONTENT_PORT": str(port), "COMPOSE_PROJECT_NAME": PROJECT}
+        self.env = {
+            **os.environ,
+            "SITES_DIR": str(projects),
+            "CONTENT_PORT": str(port),
+            "COMPOSE_PROJECT_NAME": PROJECT,
+        }
         self.base = f"http://127.0.0.1:{port}"
         self.jar = http.cookiejar.CookieJar()
         self.http = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
@@ -97,16 +103,28 @@ class Platform:
             d.mkdir(parents=True, exist_ok=True)
         belt = f"{self.belt_dir}:/app/content/var/outbox"
         self.override.write_text(
-            "# The e2e run's additions: the belt on a host directory (the host plays stations on it) and an export dir.\n"
+            "# The e2e run's additions: the belt on a host directory (the host plays stations on it)"
+            " and an export dir.\n"
             "services:\n"
             f"  content:\n    volumes:\n      - {belt}\n      - {self.export_dir}:/export\n"
             f"  worker:\n    volumes:\n      - {belt}\n"
             f"  belt-publisher:\n    volumes:\n      - {belt}\n"
         )
 
-    def compose(self, *args: str, timeout: int = 2400, check: bool = True, log: str | None = None) -> subprocess.CompletedProcess:
-        cmd = ["docker", "compose", "-f", str(self.zrepo / "docker-compose.yml"), "-f", str(self.override),
-               "--profile", "content", *args]
+    def compose(
+        self, *args: str, timeout: int = 2400, check: bool = True, log: str | None = None
+    ) -> subprocess.CompletedProcess:
+        cmd = [
+            "docker",
+            "compose",
+            "-f",
+            str(self.zrepo / "docker-compose.yml"),
+            "-f",
+            str(self.override),
+            "--profile",
+            "content",
+            *args,
+        ]
         proc = subprocess.run(cmd, cwd=self.zrepo, env=self.env, capture_output=True, text=True, timeout=timeout)
         if log:
             (self.out / f"{log}.log").write_text(proc.stdout + "\n--- stderr ---\n" + proc.stderr)
@@ -116,10 +134,18 @@ class Platform:
 
     def manage(self, *args: str, env: dict[str, str] | None = None, timeout: int = 2400, log: str | None = None) -> str:
         flags = [x for k, v in (env or {}).items() for x in ("-e", f"{k}={v}")]
-        return self.compose("exec", "-T", *flags, "content", "python", "manage.py", *args, timeout=timeout, log=log).stdout
+        return self.compose(
+            "exec", "-T", *flags, "content", "python", "manage.py", *args, timeout=timeout, log=log
+        ).stdout
 
-    def api(self, method: str, path: str, body: Any = None, params: dict[str, Any] | None = None,
-            expect: tuple[int, ...] = (200, 201, 202)) -> Any:
+    def api(
+        self,
+        method: str,
+        path: str,
+        body: Any = None,
+        params: dict[str, Any] | None = None,
+        expect: tuple[int, ...] = (200, 201, 202),
+    ) -> Any:
         url = f"{self.base}/api/v2/{path}" + (f"?{urllib.parse.urlencode(params)}" if params else "")
         data = json.dumps(body).encode() if body is not None else None
         req = urllib.request.Request(url, data=data, method=method)
@@ -176,11 +202,18 @@ class PlatformRun:
     def station(self, name: str) -> Station:
         return Station(self.platform.belt_root, name)
 
-    def adapter(self, script: str, *args: Any, env: dict[str, str] | None = None, timeout: int = 2400) -> dict[str, Any]:
+    def adapter(
+        self, script: str, *args: Any, env: dict[str, str] | None = None, timeout: int = 2400
+    ) -> dict[str, Any]:
         logs = self.out / "logs"
         logs.mkdir(parents=True, exist_ok=True)
-        proc = subprocess.run([str(HERE / "adapters" / script), *map(str, args)], capture_output=True, text=True,
-                              timeout=timeout, env={**os.environ, **(env or {})})
+        proc = subprocess.run(
+            [str(HERE / "adapters" / script), *map(str, args)],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env={**os.environ, **(env or {})},
+        )
         (logs / f"{script}.{int(time.time())}.log").write_text(proc.stdout + "\n--- stderr ---\n" + proc.stderr)
         lines = [line for line in proc.stdout.splitlines() if line.strip().startswith("{")]
         summary = json.loads(lines[-1]) if lines else {"ok": False, "error": proc.stderr[-800:]}
@@ -211,15 +244,24 @@ def template_body(name: str, values: dict[str, Any]) -> str:
 
 def wire_values(claims: dict[str, dict[str, Any]], revision: int) -> dict[str, Any]:
     urls = {key: src["url"] for key, src in wire_story()["sources"].items()}
-    return {"date": TODAY.isoformat(), "revision": revision, "context": claims["q7-context"]["answer"],
-            "license": claims["q7-license"]["answer"], "weights_date": claims["q7-weights-date"]["answer"],
-            "url_model_card": urls["model-card"], "url_leaderboard": urls["leaderboard"],
-            "url_vendor_blog": urls["vendor-blog"]}
+    return {
+        "date": TODAY.isoformat(),
+        "revision": revision,
+        "context": claims["q7-context"]["answer"],
+        "license": claims["q7-license"]["answer"],
+        "weights_date": claims["q7-weights-date"]["answer"],
+        "url_model_card": urls["model-card"],
+        "url_leaderboard": urls["leaderboard"],
+        "url_vendor_blog": urls["vendor-blog"],
+    }
 
 
 def wire_front_matter(claims: list[dict[str, Any]]) -> dict[str, Any]:
     return {
-        "excerpt": "The model card, the leaderboard and the vendor blog agree that Q-7 exists. After that, the desk is on its own.",
+        "excerpt": (
+            "The model card, the leaderboard and the vendor blog agree that Q-7 exists."
+            " After that, the desk is on its own."
+        ),
         "permalink": "/wire/quokka-q7-e2e/",
         "sources": [src["url"] for src in wire_story()["sources"].values()],
         "claims": [{k: c[k] for k in ("id", "question", "answer", "confidence", "sources")} for c in claims],
@@ -229,7 +271,10 @@ def wire_front_matter(claims: list[dict[str, Any]]) -> dict[str, Any]:
 
 def hack_front_matter() -> dict[str, Any]:
     return {
-        "excerpt": "lsof and ss both find the process holding a port. Both also show an empty result for a port they are not allowed to see.",
+        "excerpt": (
+            "lsof and ss both find the process holding a port."
+            " Both also show an empty result for a port they are not allowed to see."
+        ),
         "permalink": "/hacks/find-the-process-on-port-8080/",
         "e2e_fixture": True,
     }
@@ -246,8 +291,12 @@ def stage_preflight(run: PlatformRun) -> dict[str, Any]:
         repos[name] = {"branch": branch.stdout.strip(), **repo_state(path)}
     docker = subprocess.run(["docker", "info", "--format", "{{.ServerVersion}}"], capture_output=True, text=True)
     lh_dirty = [p for p in repos["lifehacker.dev"]["uncommitted"] if not p.startswith("??")]
-    return {"status": "pass" if docker.returncode == 0 and not lh_dirty else "fail", "repos": repos,
-            "docker": docker.stdout.strip(), "lifehacker_tracked_changes": lh_dirty}
+    return {
+        "status": "pass" if docker.returncode == 0 and not lh_dirty else "fail",
+        "repos": repos,
+        "docker": docker.stdout.strip(),
+        "lifehacker_tracked_changes": lh_dirty,
+    }
 
 
 def stage_platform_up(run: PlatformRun) -> dict[str, Any]:
@@ -255,7 +304,8 @@ def stage_platform_up(run: PlatformRun) -> dict[str, Any]:
     started = time.time()
     if not run.resume:
         p.write_override()
-        # The platform's services as zer0-cms's AGENTS.md starts them (not the retired Rails `cms`, which has no profile).
+        # The platform's services as zer0-cms's AGENTS.md starts them
+        # (not the retired Rails `cms`, which has no profile).
         p.compose("up", "-d", "--build", "--wait", "--wait-timeout", "600", *SERVICES, log="compose-up")
     raw = p.compose("ps", "--format", "json").stdout.strip()
     rows = json.loads(raw) if raw.startswith("[") else [json.loads(ln) for ln in raw.splitlines() if ln.strip()]
@@ -264,24 +314,38 @@ def stage_platform_up(run: PlatformRun) -> dict[str, Any]:
     # lives only in this process.
     password = secrets.token_urlsafe(18)
     username = f"e2e-editor-{NOW:%H%M%S}"
-    p.manage("createsuperuser", "--noinput", env={"DJANGO_SUPERUSER_USERNAME": username,
-             "DJANGO_SUPERUSER_PASSWORD": password, "DJANGO_SUPERUSER_EMAIL": f"{username}@example.invalid"})
+    p.manage(
+        "createsuperuser",
+        "--noinput",
+        env={
+            "DJANGO_SUPERUSER_USERNAME": username,
+            "DJANGO_SUPERUSER_PASSWORD": password,
+            "DJANGO_SUPERUSER_EMAIL": f"{username}@example.invalid",
+        },
+    )
     me = p.sign_in(username, password)
     belt = p.api("GET", "outbox/belt/")
     want = set(SERVICES)
     return {
         "status": "pass" if want <= {k for k, v in services.items() if v == "running"} and belt["harness"] else "fail",
-        "services": services, "seconds_to_ready": round(time.time() - started, 1),
-        "signed_in_as": me.get("username") if isinstance(me, dict) else me, "belt": belt,
+        "services": services,
+        "seconds_to_ready": round(time.time() - started, 1),
+        "signed_in_as": me.get("username") if isinstance(me, dict) else me,
+        "belt": belt,
     }
 
 
 def stage_platform_import(run: PlatformRun) -> dict[str, Any]:
     p = run.platform
-    out = "resumed: the site was imported by the run that started the stack" if run.resume else \
-        p.manage("import_jekyll", "--site", SITE_KEY, "--path", "/sites/lifehacker.dev", log="import")
+    out = (
+        "resumed: the site was imported by the run that started the stack"
+        if run.resume
+        else p.manage("import_jekyll", "--site", SITE_KEY, "--path", "/sites/lifehacker.dev", log="import")
+    )
     sites = p.api("GET", "sites/")
-    site = next(s for s in (sites if isinstance(sites, list) else sites.get("results", [])) if s["hostname"] == SITE_HOST)
+    site = next(
+        s for s in (sites if isinstance(sites, list) else sites.get("results", [])) if s["hostname"] == SITE_HOST
+    )
     children = p.api("GET", "content/pages/", params={"parent": site["root_page_id"], "page_size": 100})
     rows = children if isinstance(children, list) else children.get("results", [])
     posts = None
@@ -294,9 +358,13 @@ def stage_platform_import(run: PlatformRun) -> dict[str, Any]:
         raise RuntimeError("the imported site has no posts collection")
     types = p.api("GET", f"content/pages/{posts['id']}/types/")
     run.state.update(site=site, posts_id=posts["id"])
-    return {"status": "pass" if any(t["type"] == "cms.ArticlePage" for t in types) else "fail",
-            "import_report_tail": out.strip().splitlines()[-6:], "site": site, "posts_collection": posts["id"],
-            "creatable_types": [t["type"] for t in types]}
+    return {
+        "status": "pass" if any(t["type"] == "cms.ArticlePage" for t in types) else "fail",
+        "import_report_tail": out.strip().splitlines()[-6:],
+        "site": site,
+        "posts_collection": posts["id"],
+        "creatable_types": [t["type"] for t in types],
+    }
 
 
 def stage_sense(run: PlatformRun) -> dict[str, Any]:
@@ -306,15 +374,27 @@ def stage_sense(run: PlatformRun) -> dict[str, Any]:
     wire_idea = {**story["idea"], "collection": "wire"}
     sent = {}
     for key, idea in (("hack", hack_idea), ("wire", wire_idea)):
-        sent[key] = p.api("POST", "outbox/belt/send/", {
-            "kind": "idea", "to": ["planner", "ledger"], "subject": f"{key}:{idea['title'][:80]}", "payload": idea,
-        }, expect=(201,))
+        sent[key] = p.api(
+            "POST",
+            "outbox/belt/send/",
+            {
+                "kind": "idea",
+                "to": ["planner", "ledger"],
+                "subject": f"{key}:{idea['title'][:80]}",
+                "payload": idea,
+            },
+            expect=(201,),
+        )
     summary = p.deliver()
     run.state["ideas"] = {k: v["id"] for k, v in sent.items()}
     run.state["traces"] = {k: v["trace"] for k, v in sent.items()}
-    return {"status": "pass" if summary["delivered"] >= 2 and summary["dead_letters"] == 0 else "fail",
-            "sent_from": sorted({v["from"] for v in sent.values()}), "ideas": run.state["ideas"],
-            "traces": run.state["traces"], "belt": summary}
+    return {
+        "status": "pass" if summary["delivered"] >= 2 and summary["dead_letters"] == 0 else "fail",
+        "sent_from": sorted({v["from"] for v in sent.values()}),
+        "ideas": run.state["ideas"],
+        "traces": run.state["traces"],
+        "belt": summary,
+    }
 
 
 def stage_plan(run: PlatformRun) -> dict[str, Any]:
@@ -327,10 +407,18 @@ def stage_plan(run: PlatformRun) -> dict[str, Any]:
     hack, wire = by_trace[run.state["traces"]["hack"]], by_trace[run.state["traces"]["wire"]]
     work = run.out / "plan"
     work.mkdir(parents=True, exist_ok=True)
-    scout_row = {k: hack.payload[k] for k in ("collection", "title", "brief", "voice", "source_url", "source_title", "rationale")}
-    wire_row = {"title": wire.payload["title"], "brief": wire.payload["brief"],
-                "source_url": wire_story()["sources"]["model-card"]["url"], "source_title": "Q-7 model card (fixture)",
-                "source_id": "e2e-fixture", "trust": "primary", "rationale": "Sent from the zer0-cms Outbox desk (e2e)."}
+    scout_row = {
+        k: hack.payload[k] for k in ("collection", "title", "brief", "voice", "source_url", "source_title", "rationale")
+    }
+    wire_row = {
+        "title": wire.payload["title"],
+        "brief": wire.payload["brief"],
+        "source_url": wire_story()["sources"]["model-card"]["url"],
+        "source_title": "Q-7 model card (fixture)",
+        "source_id": "e2e-fixture",
+        "trust": "primary",
+        "rationale": "Sent from the zer0-cms Outbox desk (e2e).",
+    }
     (work / "scout.jsonl").write_text(json.dumps(scout_row) + "\n")
     (work / "wire.jsonl").write_text(json.dumps(wire_row) + "\n")
     # The planner is the single writer: one serialized run of each of lifehacker.dev's builders over the belt's ideas.
@@ -339,45 +427,97 @@ def stage_plan(run: PlatformRun) -> dict[str, Any]:
         "set -e; cd /site; cp _data/scout/ideas.jsonl /tmp/scout.orig; cp /in/scout.jsonl _data/scout/ideas.jsonl;"
         " ruby scripts/scout/build_backlog.rb --apply --max-add 1 > /out/scout.txt 2>&1;"
         " cp /tmp/scout.orig _data/scout/ideas.jsonl;"
-        " cp /in/wire.jsonl _data/wire/ideas.jsonl; ruby scripts/wire/build_backlog.rb --apply --max-add 1 > /out/wire.txt 2>&1;"
+        " cp /in/wire.jsonl _data/wire/ideas.jsonl;"
+        " ruby scripts/wire/build_backlog.rb --apply --max-add 1 > /out/wire.txt 2>&1;"
         " rm -f _data/wire/ideas.jsonl;"
         " ruby scripts/ci/lint_artifacts.rb > /out/lint.txt 2>&1; echo lint_rc=$?"
     )
-    proc = run.docker("--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp", "-v", f"{lh}:/site",
-                      "-v", f"{work}:/in:ro", "-v", f"{work}:/out", "ruby:3.4", "bash", "-c", script, log="plan")
+    proc = run.docker(
+        "--user",
+        f"{os.getuid()}:{os.getgid()}",
+        "-e",
+        "HOME=/tmp",
+        "-v",
+        f"{lh}:/site",
+        "-v",
+        f"{work}:/in:ro",
+        "-v",
+        f"{work}:/out",
+        "ruby:3.4",
+        "bash",
+        "-c",
+        script,
+        log="plan",
+    )
     scout_txt = (work / "scout.txt").read_text() if (work / "scout.txt").exists() else ""
     wire_txt = (work / "wire.txt").read_text() if (work / "wire.txt").exists() else ""
     src = re.search(r"\+ (SRC-\d+)", scout_txt)
     wid = re.search(r"\+ (WIRE-\d+)", wire_txt)
     lint_rc = int(re.search(r"lint_rc=(\d+)", proc.stdout).group(1)) if "lint_rc=" in proc.stdout else None
     if not (src and wid):
-        raise RuntimeError(f"no backlog id minted: scout={scout_txt[-400:]!r} wire={wire_txt[-400:]!r} {proc.stderr[-400:]}")
+        raise RuntimeError(
+            f"no backlog id minted: scout={scout_txt[-400:]!r} wire={wire_txt[-400:]!r} {proc.stderr[-400:]}"
+        )
     ids = {"hack": src.group(1), "wire": wid.group(1)}
     assignments = {}
     for key, msg in (("hack", hack), ("wire", wire)):
-        a = msg.reply("assignment", "planner", ["drafter", "ledger"],
-                      {"backlog_id": ids[key], "kind": "hack" if key == "hack" else "wire", "title": msg.payload["title"]})
+        a = msg.reply(
+            "assignment",
+            "planner",
+            ["drafter", "ledger"],
+            {"backlog_id": ids[key], "kind": "hack" if key == "hack" else "wire", "title": msg.payload["title"]},
+        )
         run.station("planner").send(a)
         assignments[key] = a.id
     summary = run.platform.deliver()
     diff = subprocess.run(["git", "-C", str(lh), "diff", "--stat"], capture_output=True, text=True).stdout
     run.state.update(backlog_ids=ids, assignments=assignments)
-    return {"status": "pass" if lint_rc == 0 and summary["dead_letters"] == 0 else "fail", "lifehacker_branch": branch,
-            "backlog_ids": ids, "lint_artifacts_exit": lint_rc, "lifehacker_diff": diff.strip().splitlines()[-3:],
-            "belt": summary}
+    return {
+        "status": "pass" if lint_rc == 0 and summary["dead_letters"] == 0 else "fail",
+        "lifehacker_branch": branch,
+        "backlog_ids": ids,
+        "lint_artifacts_exit": lint_rc,
+        "lifehacker_diff": diff.strip().splitlines()[-3:],
+        "belt": summary,
+    }
 
 
-def create_page(run: PlatformRun, *, title: str, slug: str, description: str, author: str, tags: list[str],
-                category: str, path: str, front_matter: dict[str, Any], body: str) -> dict[str, Any]:
+def create_page(
+    run: PlatformRun,
+    *,
+    title: str,
+    slug: str,
+    description: str,
+    author: str,
+    tags: list[str],
+    category: str,
+    path: str,
+    front_matter: dict[str, Any],
+    body: str,
+) -> dict[str, Any]:
     p = run.platform
     categories = run.state["categories"]
-    return p.api("POST", "content/pages/", {
-        "parent": run.state["posts_id"], "type": "cms.ArticlePage",
-        "fields": {"title": title, "slug": slug, "search_description": description, "author": author,
-                   "date": f"{TODAY.isoformat()}T00:00:00Z", "tags": tags, "categories": [categories[category]],
-                   FRONT_MATTER_FIELD: front_matter, PATH_FIELD: path},
-        "body": [{"type": "markdown", "value": body}],
-    }, expect=(201,))
+    return p.api(
+        "POST",
+        "content/pages/",
+        {
+            "parent": run.state["posts_id"],
+            "type": "cms.ArticlePage",
+            "fields": {
+                "title": title,
+                "slug": slug,
+                "search_description": description,
+                "author": author,
+                "date": f"{TODAY.isoformat()}T00:00:00Z",
+                "tags": tags,
+                "categories": [categories[category]],
+                FRONT_MATTER_FIELD: front_matter,
+                PATH_FIELD: path,
+            },
+            "body": [{"type": "markdown", "value": body}],
+        },
+        expect=(201,),
+    )
 
 
 def stage_produce(run: PlatformRun) -> dict[str, Any]:
@@ -396,50 +536,100 @@ def stage_produce(run: PlatformRun) -> dict[str, Any]:
     claims["q7-license"]["answer"] = "proprietary"
     claims["q7-weights-date"]["answer"] = "November 4"
     hack_page = create_page(
-        run, title="Find the process squatting on port 8080: lsof, ss, and the flag everyone forgets",
+        run,
+        title="Find the process squatting on port 8080: lsof, ss, and the flag everyone forgets",
         slug="find-the-process-on-port-8080",
-        description="Address already in use, and nothing says by whom. Two commands answer it, and each has one flag that decides whether the answer is true.",
-        author="edge", tags=["docker", "shell"], category="Hacks", path=HACK_PATH, front_matter=hack_front_matter(),
-        body=template_body("hack.md", {"date": TODAY.isoformat(), "title": ""}))
+        description=(
+            "Address already in use, and nothing says by whom."
+            " Two commands answer it, and each has one flag that decides whether the answer is true."
+        ),
+        author="edge",
+        tags=["docker", "shell"],
+        category="Hacks",
+        path=HACK_PATH,
+        front_matter=hack_front_matter(),
+        body=template_body("hack.md", {"date": TODAY.isoformat(), "title": ""}),
+    )
     wire_page = create_page(
-        run, title=story["idea"]["title"], slug="quokka-q7-e2e",
-        description="Three sources, three answers: the model card, the leaderboard and the vendor blog each describe Q-7 differently. The desk reports all three.",
-        author="rhea", tags=["ai", "news"], category="The Wire", path=WIRE_PATH,
-        front_matter=wire_front_matter(list(claims.values())), body=template_body("wire.md", wire_values(claims, 1)))
+        run,
+        title=story["idea"]["title"],
+        slug="quokka-q7-e2e",
+        description=(
+            "Three sources, three answers: the model card, the leaderboard and the vendor blog each describe Q-7"
+            " differently. The desk reports all three."
+        ),
+        author="rhea",
+        tags=["ai", "news"],
+        category="The Wire",
+        path=WIRE_PATH,
+        front_matter=wire_front_matter(list(claims.values())),
+        body=template_body("wire.md", wire_values(claims, 1)),
+    )
     pages = {"hack": hack_page, "wire": wire_page}
     sent = {}
     for key, page in pages.items():
         assignment = by_trace[run.state["traces"][key]]
-        d = assignment.reply("draft", "drafter", ["verifier", "ledger"],
-                             {"backlog_id": assignment.payload["backlog_id"], "kind": assignment.payload["kind"], "revision": 1},
-                             ref={"page_id": page["id"], "path": page["fields"].get(PATH_FIELD), "site": SITE_KEY})
+        d = assignment.reply(
+            "draft",
+            "drafter",
+            ["verifier", "ledger"],
+            {"backlog_id": assignment.payload["backlog_id"], "kind": assignment.payload["kind"], "revision": 1},
+            ref={"page_id": page["id"], "path": page["fields"].get(PATH_FIELD), "site": SITE_KEY},
+        )
         run.station("drafter").send(d)
         sent[key] = d.id
     summary = p.deliver()
     run.state.update(pages={k: v["id"] for k, v in pages.items()}, drafts=sent)
     ok = all(pg["fields"].get(PATH_FIELD) == path for pg, path in ((hack_page, HACK_PATH), (wire_page, WIRE_PATH)))
-    return {"status": "pass" if ok and summary["dead_letters"] == 0 else "fail",
-            "pages": {k: {"id": v["id"], "status": v.get("status"), "path": v["fields"].get(PATH_FIELD),
-                          "revision": (v.get("latest_revision") or {}).get("id")} for k, v in pages.items()},
-            "categories_seen": sorted(run.state["categories"])[:12], "belt": summary}
+    return {
+        "status": "pass" if ok and summary["dead_letters"] == 0 else "fail",
+        "pages": {
+            k: {
+                "id": v["id"],
+                "status": v.get("status"),
+                "path": v["fields"].get(PATH_FIELD),
+                "revision": (v.get("latest_revision") or {}).get("id"),
+            }
+            for k, v in pages.items()
+        },
+        "categories_seen": sorted(run.state["categories"])[:12],
+        "belt": summary,
+    }
 
 
-def claim_check(run: PlatformRun, title: str, claims: dict[str, dict[str, Any]], *, closes_at_tick: int = 8) -> dict[str, Any]:
+def claim_check(
+    run: PlatformRun, title: str, claims: dict[str, dict[str, Any]], *, closes_at_tick: int = 8
+) -> dict[str, Any]:
     p = run.platform
-    started = p.api("POST", "outbox/claim-checks/", {
-        "title": title, "author": "rhea", "page": run.state["pages"]["wire"],
-        "claims": [{k: c[k] for k in ("id", "question", "answer", "confidence", "sources")} for c in claims.values()],
-        "timeline": [{k: row[k] for k in ("tick", "source", "says") if k in row} | ({"fact": row["fact"]} if row.get("fact") else {})
-                     for row in wire_story()["timeline"]],
-        "closes_at_tick": closes_at_tick, "lag_b": 2,
-    }, expect=(202,))
+    started = p.api(
+        "POST",
+        "outbox/claim-checks/",
+        {
+            "title": title,
+            "author": "rhea",
+            "page": run.state["pages"]["wire"],
+            "claims": [
+                {k: c[k] for k in ("id", "question", "answer", "confidence", "sources")} for c in claims.values()
+            ],
+            "timeline": [
+                {k: row[k] for k in ("tick", "source", "says") if k in row}
+                | ({"fact": row["fact"]} if row.get("fact") else {})
+                for row in wire_story()["timeline"]
+            ],
+            "closes_at_tick": closes_at_tick,
+            "lag_b": 2,
+        },
+        expect=(202,),
+    )
     return p.wait_run("claim-checks", started["id"])
 
 
 def verdicts(check: dict[str, Any]) -> list[dict[str, Any]]:
     report = check.get("report") or {}
-    return [{k: c.get(k) for k in ("claim_id", "verdict", "reason", "draft_answer", "supported_answer")}
-            for c in report.get("claims", [])]
+    return [
+        {k: c.get(k) for k in ("claim_id", "verdict", "reason", "draft_answer", "supported_answer")}
+        for c in report.get("claims", [])
+    ]
 
 
 def export_site(run: PlatformRun, name: str, *, drafts: bool) -> Path:
@@ -460,7 +650,9 @@ def site_copy_with(run: PlatformRun, name: str, export: Path, rels: list[str]) -
     return site
 
 
-def gates(run: PlatformRun, site: Path, name: str, files: list[str], env: dict[str, str] | None = None) -> dict[str, Any]:
+def gates(
+    run: PlatformRun, site: Path, name: str, files: list[str], env: dict[str, str] | None = None
+) -> dict[str, Any]:
     out = run.out / "gates" / name
     summary = run.adapter("lifehacker_gates.sh", site, out, *files, env=env)
     findings = []
@@ -471,8 +663,13 @@ def gates(run: PlatformRun, site: Path, name: str, files: list[str], env: dict[s
             if any(f in str(row.get("file") or "") for f in files):
                 findings.append({k: row.get(k) for k in ("check_id", "severity", "rule", "file", "evidence")})
     blocking = [f for f in findings if f["severity"] == "error"]
-    return {"ok": bool(summary.get("ok")) and not blocking, "adapter": {k: summary.get(k) for k in
-            ("ok", "scoped", "checks_run", "checks_skipped", "by_severity", "_exit")}, "new_file_findings": findings}
+    return {
+        "ok": bool(summary.get("ok")) and not blocking,
+        "adapter": {
+            k: summary.get(k) for k in ("ok", "scoped", "checks_run", "checks_skipped", "by_severity", "_exit")
+        },
+        "new_file_findings": findings,
+    }
 
 
 def stage_verify(run: PlatformRun) -> dict[str, Any]:
@@ -481,9 +678,12 @@ def stage_verify(run: PlatformRun) -> dict[str, Any]:
     hack_draft, wire_draft = inbox[run.state["traces"]["hack"]], inbox[run.state["traces"]["wire"]]
     claims = run.state["claims"]
     first = claim_check(run, "Q-7 dispatch, revision 1", claims)
-    block = wire_draft.reply("verdict", "verifier", ["drafter", "editor", "ledger"],
-                             {"verdict": "pass" if first.get("passed") else "block", "claim_check": first["id"],
-                              "desk": verdicts(first)})
+    block = wire_draft.reply(
+        "verdict",
+        "verifier",
+        ["drafter", "editor", "ledger"],
+        {"verdict": "pass" if first.get("passed") else "block", "claim_check": first["id"], "desk": verdicts(first)},
+    )
     run.station("verifier").send(block)
     p.deliver()
     # The drafter takes the block back to the platform: every claim the sources no longer support is corrected there.
@@ -495,13 +695,22 @@ def stage_verify(run: PlatformRun) -> dict[str, Any]:
             corrected.append(v["claim_id"])
     run.station("drafter").receive(kinds=("verdict",))
     page = p.api("GET", f"content/pages/{run.state['pages']['wire']}/")
-    saved = p.api("PATCH", f"content/pages/{page['id']}/", {
-        "base_revision_id": (page.get("latest_revision") or {}).get("id"),
-        "fields": {FRONT_MATTER_FIELD: wire_front_matter(list(claims.values()))},
-        "body": [{"type": "markdown", "value": template_body("wire.md", wire_values(claims, 2))}],
-    })
-    redraft = block.reply("draft", "drafter", ["verifier", "ledger"], {"revision": 2, "corrected": corrected},
-                          ref={"page_id": page["id"], "revision": (saved.get("latest_revision") or {}).get("id")})
+    saved = p.api(
+        "PATCH",
+        f"content/pages/{page['id']}/",
+        {
+            "base_revision_id": (page.get("latest_revision") or {}).get("id"),
+            "fields": {FRONT_MATTER_FIELD: wire_front_matter(list(claims.values()))},
+            "body": [{"type": "markdown", "value": template_body("wire.md", wire_values(claims, 2))}],
+        },
+    )
+    redraft = block.reply(
+        "draft",
+        "drafter",
+        ["verifier", "ledger"],
+        {"revision": 2, "corrected": corrected},
+        ref={"page_id": page["id"], "revision": (saved.get("latest_revision") or {}).get("id")},
+    )
     run.station("drafter").send(redraft)
     p.deliver()
     run.station("verifier").receive(kinds=("draft",))
@@ -515,29 +724,52 @@ def stage_verify(run: PlatformRun) -> dict[str, Any]:
         "hack": gate["ok"],
         "wire": gate["ok"] and bool(second.get("passed")),
     }
-    hack_verdict = hack_draft.reply("verdict", "verifier", ["publisher", "ledger"],
-                                    {"verdict": "pass" if passes["hack"] else "block", "tier": "low-risk"})
-    wire_verdict = redraft.reply("verdict", "verifier", ["editor", "ledger"],
-                                 {"verdict": "pass" if passes["wire"] else "block", "tier": "factual",
-                                  "claim_check": second["id"], "desk": verdicts(second)})
+    hack_verdict = hack_draft.reply(
+        "verdict",
+        "verifier",
+        ["publisher", "ledger"],
+        {"verdict": "pass" if passes["hack"] else "block", "tier": "low-risk"},
+    )
+    wire_verdict = redraft.reply(
+        "verdict",
+        "verifier",
+        ["editor", "ledger"],
+        {
+            "verdict": "pass" if passes["wire"] else "block",
+            "tier": "factual",
+            "claim_check": second["id"],
+            "desk": verdicts(second),
+        },
+    )
     run.station("verifier").send(hack_verdict)
     run.station("verifier").send(wire_verdict)
     p.deliver()
     approval = None
     if passes["wire"]:
         # A factual piece waits for a person: the editor approves it from the platform's Outbox desk.
-        approval = p.api("POST", "outbox/belt/send/", {
-            "kind": "approval", "to": ["publisher", "ledger"], "parent_id": wire_verdict.id,
-            "payload": {"note": "Claims re-checked against the sources; approved for publication."},
-            "page": run.state["pages"]["wire"],
-        }, expect=(201,))
+        approval = p.api(
+            "POST",
+            "outbox/belt/send/",
+            {
+                "kind": "approval",
+                "to": ["publisher", "ledger"],
+                "parent_id": wire_verdict.id,
+                "payload": {"note": "Claims re-checked against the sources; approved for publication."},
+                "page": run.state["pages"]["wire"],
+            },
+            expect=(201,),
+        )
         p.deliver()
     return {
         "status": "pass" if not first.get("passed") and second.get("passed") and gate["ok"] and approval else "fail",
-        "claim_desk_rounds": [{"round": 1, "passed": first.get("passed"), "claims": verdicts(first)},
-                              {"round": 2, "passed": second.get("passed"), "claims": verdicts(second)}],
-        "corrected_in_platform": corrected, "draft_saved_revision": (saved.get("latest_revision") or {}).get("id"),
-        "lifehacker_gates_on_exported_drafts": gate, "approval": approval and {k: approval[k] for k in ("id", "from", "kind")},
+        "claim_desk_rounds": [
+            {"round": 1, "passed": first.get("passed"), "claims": verdicts(first)},
+            {"round": 2, "passed": second.get("passed"), "claims": verdicts(second)},
+        ],
+        "corrected_in_platform": corrected,
+        "draft_saved_revision": (saved.get("latest_revision") or {}).get("id"),
+        "lifehacker_gates_on_exported_drafts": gate,
+        "approval": approval and {k: approval[k] for k in ("id", "from", "kind")},
     }
 
 
@@ -575,35 +807,81 @@ def stage_publish(run: PlatformRun) -> dict[str, Any]:
     # lifehacker.dev's own cover-art renderer (offline, deterministic) stamps `preview:` into each post.
     art = {}
     for rel in (HACK_PATH, WIRE_PATH):
-        proc = run.docker("--network=none", "--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp",
-                          "-v", f"{lh}:/repo", "-w", "/repo", "node:22-slim", "node", "scripts/preview/generate.mjs",
-                          "-f", rel, log=f"preview-{Path(rel).stem}")
+        proc = run.docker(
+            "--network=none",
+            "--user",
+            f"{os.getuid()}:{os.getgid()}",
+            "-e",
+            "HOME=/tmp",
+            "-v",
+            f"{lh}:/repo",
+            "-w",
+            "/repo",
+            "node:22-slim",
+            "node",
+            "scripts/preview/generate.mjs",
+            "-f",
+            rel,
+            log=f"preview-{Path(rel).stem}",
+        )
         art[rel] = {"exit": proc.returncode, "stamped": "preview:" in (lh / rel).read_text()}
     site = run.out / "sites" / "output"
     if site.exists():
         shutil.rmtree(site)
     copy_working_tree(lh, site)
-    changed = sorted({*(HACK_PATH, WIRE_PATH), *[ln[3:] for ln in subprocess.run(
-        ["git", "-C", str(lh), "status", "--porcelain", "-uall"], capture_output=True, text=True).stdout.splitlines()]})
+    changed = sorted(
+        {
+            *(HACK_PATH, WIRE_PATH),
+            *[
+                ln[3:]
+                for ln in subprocess.run(
+                    ["git", "-C", str(lh), "status", "--porcelain", "-uall"], capture_output=True, text=True
+                ).stdout.splitlines()
+            ],
+        }
+    )
     changed_files = [c for c in changed if (lh / c).is_file()]
     gate_first = gates(run, site, "output", changed_files)
     build = run.adapter("lifehacker_build.sh", site, run.out / "build", HACK_PATH, WIRE_PATH)
     site_dir = Path(build.get("site_dir") or run.out / "build" / "_site")
-    gate_built = gates(run, site, "output-built", changed_files,
-                       env={"LH_SITE_DIR": str(site_dir), "LH_BUILD_RC": "0" if build.get("ok") else "1"})
+    gate_built = gates(
+        run,
+        site,
+        "output-built",
+        changed_files,
+        env={"LH_SITE_DIR": str(site_dir), "LH_BUILD_RC": "0" if build.get("ok") else "1"},
+    )
     rendered = build.get("posts") or []
-    ok = (len(run.state["published_msgs"]) == 2 and set(compare["new"]) >= {HACK_PATH, WIRE_PATH}
-          and all(a["stamped"] for a in art.values()) and gate_first["ok"] and build.get("ok") and gate_built["ok"]
-          and all(r.get("exists") and r.get("title_found") for r in rendered))
+    ok = (
+        len(run.state["published_msgs"]) == 2
+        and set(compare["new"]) >= {HACK_PATH, WIRE_PATH}
+        and all(a["stamped"] for a in art.values())
+        and gate_first["ok"]
+        and build.get("ok")
+        and gate_built["ok"]
+        and all(r.get("exists") and r.get("title_found") for r in rendered)
+    )
     return {
         "status": "pass" if ok else "fail",
-        "published": {k: {"live": v.get("live"), "live_revision_id": v.get("live_revision_id")} for k, v in published.items()},
-        "belt_published": [{k: m.get(k) for k in ("seq", "id", "from", "to", "ref", "parent_id")} for m in run.state["published_msgs"]],
-        "learner_received": len(learner), "belt": belt,
-        "export_vs_lifehacker": {"identical": compare["identical"], "differs": compare["differs"][:20],
-                                 "differs_count": len(compare["differs"]), "new": compare["new"]},
-        "cover_art": art, "lifehacker_changed": changed, "gates": gate_first,
-        "build": {k: build.get(k) for k in ("ok", "pages", "posts", "_exit")}, "gates_with_built_site": gate_built,
+        "published": {
+            k: {"live": v.get("live"), "live_revision_id": v.get("live_revision_id")} for k, v in published.items()
+        },
+        "belt_published": [
+            {k: m.get(k) for k in ("seq", "id", "from", "to", "ref", "parent_id")} for m in run.state["published_msgs"]
+        ],
+        "learner_received": len(learner),
+        "belt": belt,
+        "export_vs_lifehacker": {
+            "identical": compare["identical"],
+            "differs": compare["differs"][:20],
+            "differs_count": len(compare["differs"]),
+            "new": compare["new"],
+        },
+        "cover_art": art,
+        "lifehacker_changed": changed,
+        "gates": gate_first,
+        "build": {k: build.get(k) for k in ("ok", "pages", "posts", "_exit")},
+        "gates_with_built_site": gate_built,
     }
 
 
@@ -611,25 +889,38 @@ def stage_learn(run: PlatformRun) -> dict[str, Any]:
     p = run.platform
     story = wire_story()
     p.api("POST", f"outbox/claim-checks/{run.state['claim_check']}/resolve/", {"truth": story["truth"]}, expect=(202,))
-    resolved = p.wait(f"outbox/claim-checks/{run.state['claim_check']}/",
-                      lambda r: r.get("resolution_status") in ("succeeded", "failed"), timeout=300)
+    resolved = p.wait(
+        f"outbox/claim-checks/{run.state['claim_check']}/",
+        lambda r: r.get("resolution_status") in ("succeeded", "failed"),
+        timeout=300,
+    )
     calibration = p.api("GET", "outbox/claim-checks/calibration/")
     # A later read of the sources: the vendor moved the weights date after the dispatch went live.
     recheck = claim_check(run, "Q-7 dispatch, published: recheck", run.state["claims"], closes_at_tick=28)
     blocked = [v for v in verdicts(recheck) if v["verdict"] == "block"]
     signal = None
     if blocked:
-        wire_published = next(m for m in run.state["published_msgs"] if m["ref"]["page_id"] == run.state["pages"]["wire"])
-        signal = p.api("POST", "outbox/belt/send/", {
-            "kind": "signal", "to": ["planner", "ledger"], "parent_id": wire_published["id"],
-            "trace": run.state["traces"]["wire"],
-            "payload": {"reason": "stale-published-claim", "claims": blocked, "claim_check": recheck["id"]},
-            "page": run.state["pages"]["wire"],
-        }, expect=(201,))
+        wire_published = next(
+            m for m in run.state["published_msgs"] if m["ref"]["page_id"] == run.state["pages"]["wire"]
+        )
+        signal = p.api(
+            "POST",
+            "outbox/belt/send/",
+            {
+                "kind": "signal",
+                "to": ["planner", "ledger"],
+                "parent_id": wire_published["id"],
+                "trace": run.state["traces"]["wire"],
+                "payload": {"reason": "stale-published-claim", "claims": blocked, "claim_check": recheck["id"]},
+                "page": run.state["pages"]["wire"],
+            },
+            expect=(201,),
+        )
         p.deliver()
     return {
         "status": "pass" if resolved.get("resolution_status") == "succeeded" and blocked and signal else "fail",
-        "resolutions": resolved.get("resolutions"), "calibration": calibration,
+        "resolutions": resolved.get("resolutions"),
+        "calibration": calibration,
         "recheck": {"passed": recheck.get("passed"), "blocked": blocked},
         "correction_signal": signal and {k: signal[k] for k in ("id", "from", "kind", "to")},
     }
@@ -652,27 +943,62 @@ def stage_orchestrate(run: PlatformRun) -> dict[str, Any]:
 
 def stage_toolbelt(run: PlatformRun) -> dict[str, Any]:
     scripts = run.repo("scripts")
-    smoke = run.docker("--network=none", "-v", f"{scripts}:/src:ro", "ruby:3.4", "bash", "-c",
-                       "cp -r /src /tmp/scripts && cd /tmp/scripts && bash tests/smoke.sh", log="scripts-smoke")
-    lint = run.docker("-v", f"{scripts}:/mnt:ro", "-w", "/mnt", "koalaman/shellcheck:stable", "--severity=warning",
-                      "project-init.sh", "install.sh", "git_init.sh", "rename-directory.sh", "create_package.sh",
-                      "FORKME/forkme.sh", "STASHME/stashme.sh", "tests/smoke.sh",
-                      log="scripts-shellcheck")
+    smoke = run.docker(
+        "--network=none",
+        "-v",
+        f"{scripts}:/src:ro",
+        "ruby:3.4",
+        "bash",
+        "-c",
+        "cp -r /src /tmp/scripts && cd /tmp/scripts && bash tests/smoke.sh",
+        log="scripts-smoke",
+    )
+    lint = run.docker(
+        "-v",
+        f"{scripts}:/mnt:ro",
+        "-w",
+        "/mnt",
+        "koalaman/shellcheck:stable",
+        "--severity=warning",
+        "project-init.sh",
+        "install.sh",
+        "git_init.sh",
+        "rename-directory.sh",
+        "create_package.sh",
+        "FORKME/forkme.sh",
+        "STASHME/stashme.sh",
+        "tests/smoke.sh",
+        log="scripts-shellcheck",
+    )
     oks = [ln for ln in smoke.stdout.splitlines() if ln.startswith("ok")]
     fails = [ln for ln in smoke.stdout.splitlines() if ln.startswith("FAIL")]
-    return {"status": "pass" if smoke.returncode == 0 and lint.returncode == 0 else "fail",
-            "smoke": {"exit": smoke.returncode, "ok": len(oks), "fail": fails}, "shellcheck_exit": lint.returncode}
+    return {
+        "status": "pass" if smoke.returncode == 0 and lint.returncode == 0 else "fail",
+        "smoke": {"exit": smoke.returncode, "ok": len(oks), "fail": fails},
+        "shellcheck_exit": lint.returncode,
+    }
 
 
 def stage_harness(run: PlatformRun) -> dict[str, Any]:
     outbox = HERE.parent
-    proc = run.docker("--network=none", "-v", f"{outbox}:/src:ro", "python:3.13-slim", "sh", "-c",
-                      "cp -r /src /tmp/o && cd /tmp/o && PYTHONPATH=src python -m unittest discover -s tests 2>&1 | tail -3"
-                      " && PYTHONPATH=src python -m outbox.cli suite --tasks tasks --out /tmp/suite > /tmp/suite.json"
-                      " && echo suite_ok", log="outbox-harness")
+    proc = run.docker(
+        "--network=none",
+        "-v",
+        f"{outbox}:/src:ro",
+        "python:3.13-slim",
+        "sh",
+        "-c",
+        "cp -r /src /tmp/o && cd /tmp/o && PYTHONPATH=src python -m unittest discover -s tests 2>&1 | tail -3"
+        " && PYTHONPATH=src python -m outbox.cli suite --tasks tasks --out /tmp/suite > /tmp/suite.json"
+        " && echo suite_ok",
+        log="outbox-harness",
+    )
     ran = re.search(r"Ran (\d+) tests", proc.stdout)
-    return {"status": "pass" if proc.returncode == 0 and "\nOK" in proc.stdout and "suite_ok" in proc.stdout else "fail",
-            "tests": int(ran.group(1)) if ran else None, "suite": "suite_ok" in proc.stdout}
+    return {
+        "status": "pass" if proc.returncode == 0 and "\nOK" in proc.stdout and "suite_ok" in proc.stdout else "fail",
+        "tests": int(ran.group(1)) if ran else None,
+        "suite": "suite_ok" in proc.stdout,
+    }
 
 
 def stage_ledger(run: PlatformRun) -> dict[str, Any]:
@@ -682,8 +1008,10 @@ def stage_ledger(run: PlatformRun) -> dict[str, Any]:
     for key, trace in run.state["traces"].items():
         rows = p.api("GET", f"outbox/belt/traces/{trace}/")["messages"]
         journeys[key] = [f"{m['seq']}:{m['from']}:{m['kind']}" for m in rows]
-    need = {"hack": ["idea", "assignment", "draft", "verdict", "published"],
-            "wire": ["idea", "assignment", "draft", "verdict", "draft", "verdict", "approval", "published", "signal"]}
+    need = {
+        "hack": ["idea", "assignment", "draft", "verdict", "published"],
+        "wire": ["idea", "assignment", "draft", "verdict", "draft", "verdict", "approval", "published", "signal"],
+    }
     complete = {k: [s.split(":")[2] for s in v] == need[k] for k, v in journeys.items()}
     ok = summary["seq_gapless"] and summary["ids_unique"] and summary["dead_letters"] == 0 and all(complete.values())
     return {"status": "pass" if ok else "fail", "belt": summary, "journeys": journeys, "complete": complete}
@@ -696,9 +1024,18 @@ STAGES: list[tuple[str, str, Callable[[PlatformRun], dict[str, Any]], tuple[str,
     ("sense", "Ideas sent onto the belt from the platform's Outbox desk", stage_sense, ("platform-import",)),
     ("plan", "lifehacker.dev's backlog builders mint the ids; the planner assigns them", stage_plan, ("sense",)),
     ("produce", "The person writes both pieces as draft pages in the platform", stage_produce, ("plan",)),
-    ("verify", "Claim desk in the platform's worker; correction; lifehacker.dev gates; approval", stage_verify, ("produce",)),
-    ("publish", "Publish in the platform; the belt announces it; export to lifehacker.dev; cover art; gates; build",
-     stage_publish, ("verify",)),
+    (
+        "verify",
+        "Claim desk in the platform's worker; correction; lifehacker.dev gates; approval",
+        stage_verify,
+        ("produce",),
+    ),
+    (
+        "publish",
+        "Publish in the platform; the belt announces it; export to lifehacker.dev; cover art; gates; build",
+        stage_publish,
+        ("verify",),
+    ),
     ("learn", "Resolve and calibrate in the platform; a recheck signals a correction", stage_learn, ("publish",)),
     ("orchestrate", "gitorio compiles the pipeline's lines", stage_orchestrate, ()),
     ("toolbelt", "scripts' safety smoke and shellcheck", stage_toolbelt, ()),
@@ -720,12 +1057,25 @@ def write_report(run: PlatformRun, extra: dict[str, Any]) -> None:
     counts: dict[str, int] = {}
     for s in run.stages:
         counts[s["status"]] = counts.get(s["status"], 0) + 1
-    report = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "counts": counts,
-              "lifehacker_branch": run.state.get("lh_branch"), "stages": run.stages, **extra}
+    report = {
+        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "counts": counts,
+        "lifehacker_branch": run.state.get("lh_branch"),
+        "stages": run.stages,
+        **extra,
+    }
     (run.out / "report.json").write_text(json.dumps(report, indent=2, default=str) + "\n")
-    lines = ["# Platform run: zer0-cms to lifehacker.dev", "",
-             f"> Generated {report['generated_at']}; {counts}; output on lifehacker.dev branch `{report['lifehacker_branch']}`.", "",
-             "| Stage | Result | Seconds | What it shows |", "| --- | --- | --- | --- |"]
+    lines = [
+        "# Platform run: zer0-cms to lifehacker.dev",
+        "",
+        (
+            f"> Generated {report['generated_at']}; {counts};"
+            f" output on lifehacker.dev branch `{report['lifehacker_branch']}`."
+        ),
+        "",
+        "| Stage | Result | Seconds | What it shows |",
+        "| --- | --- | --- | --- |",
+    ]
     lines += [f"| {s['name']} | {s['status']} | {s['seconds']} | {s['title']} |" for s in run.stages]
     (run.out / "report.md").write_text("\n".join(lines) + "\n")
 
@@ -736,9 +1086,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, default=HERE.parent / "runs" / f"platform-run-{NOW:%Y%m%d-%H%M%S}")
     parser.add_argument("--port", type=int, default=18000, help="the platform's port on 127.0.0.1")
     parser.add_argument("--keep-up", action="store_true", help="leave the zer0-cms stack running afterwards")
-    parser.add_argument("--only", nargs="*", default=[], help="run only these stages (the rest are reported as skipped)")
-    parser.add_argument("--resume", action="store_true",
-                        help="reuse the stack a --keep-up run left up (same --out): no build, no re-import")
+    parser.add_argument(
+        "--only", nargs="*", default=[], help="run only these stages (the rest are reported as skipped)"
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="reuse the stack a --keep-up run left up (same --out): no build, no re-import",
+    )
     args = parser.parse_args(argv)
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -756,12 +1111,19 @@ def main(argv: list[str] | None = None) -> int:
                 try:
                     result = fn(run)
                 except Exception as e:  # a stage's failure is its result; later stages that need it are skipped
-                    result = {"status": "fail", "error": f"{type(e).__name__}: {e}", "traceback": traceback.format_exc()[-3000:]}
+                    result = {
+                        "status": "fail",
+                        "error": f"{type(e).__name__}: {e}",
+                        "traceback": traceback.format_exc()[-3000:],
+                    }
             if result["status"] == "fail" or (result["status"] == "skip" and not args.only):
                 failed.add(name)
             run.stages.append({"name": name, "title": title, "seconds": round(time.time() - started, 1), **result})
-            print(f"[platform-run] {name}: {result['status']} ({run.stages[-1]['seconds']}s)"
-                  + (f" — {result.get('error') or result.get('reason')}" if result["status"] != "pass" else ""), flush=True)
+            print(
+                f"[platform-run] {name}: {result['status']} ({run.stages[-1]['seconds']}s)"
+                + (f" — {result.get('error') or result.get('reason')}" if result["status"] != "pass" else ""),
+                flush=True,
+            )
     finally:
         down = teardown(run) if (run.platform.override.exists()) else {}
         write_report(run, {"teardown": down, "api_calls": len(run.platform.calls)})

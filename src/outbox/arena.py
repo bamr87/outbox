@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import shutil
 from pathlib import Path
 from typing import Any
@@ -11,7 +10,6 @@ from .agents import BaseAgent, build_default_agents
 from .mailbox import Mailbox, Relay, append_jsonl, write_json
 from .protocol import Message
 from .score import score_trial
-
 
 AGENT_IDS = ("scout", "claimant-a", "claimant-b")
 

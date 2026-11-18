@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .arena import Arena, new_run_dir
@@ -30,7 +30,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     task = load_task(Path(args.task))
     if args.lag_b is not None:
         task["lag_b"] = int(args.lag_b)
-    run_id = args.run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + task["id"]
+    run_id = args.run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + task["id"]
     root = new_run_dir(Path(args.out), run_id)
     result = Arena(root, task).run()
     print(json.dumps(result, indent=2))

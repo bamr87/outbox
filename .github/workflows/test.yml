@@ -20,3 +20,18 @@ jobs:
         run: python3 -m unittest discover -s tests -v
       - name: Suite smoke
         run: python3 -m outbox.cli suite --tasks tasks --out "$RUNNER_TEMP"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # ruff is a dev and CI tool only (configured in pyproject.toml), installed unpinned here and
+      # nowhere else: the package itself stays standard library with no dependencies.
+      - name: Lint and format check (ruff)
+        run: |
+          python3 -m pip install ruff
+          ruff check .
+          ruff format --check .
