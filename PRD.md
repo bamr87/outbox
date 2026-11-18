@@ -58,13 +58,13 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 
 | ID | Feature | Status | Where | Requirements |
 | --- | --- | --- | --- | --- |
-| [OUTBOX-001](features/features.yml) | Agents: scout (env/clock), claimant-a (fast), claimant-b… | shipped | [`agents`](agents) · [`README.md`](README.md) | TBD |
-| [OUTBOX-002](features/features.yml) | CLI: run, watch, suite | shipped | [`src/outbox/cli.py`](src/outbox/cli.py) · [`README.md`](README.md) | TBD |
-| [OUTBOX-003](features/features.yml) | Task families: stale_fact, ambiguous, deadline | shipped | [`tasks`](tasks) · [`README.md`](README.md) | TBD |
-| [OUTBOX-004](features/features.yml) | Relay to inboxes + ledger.jsonl | shipped | [`src/outbox/mailbox.py`](src/outbox/mailbox.py) · [`README.md`](README.md) | TBD |
-| [OUTBOX-005](features/features.yml) | Scoring: winner, correctness, confidence inversion, retracts | shipped | [`src/outbox/score.py`](src/outbox/score.py) · [`README.md`](README.md) | FR1 |
-| [OUTBOX-006](features/features.yml) | Belt profile: handoff messages through one gapless, crash-repairable relay | partial | [`src/outbox/belt.py`](src/outbox/belt.py) · [`docs/adr/0002-belt-profile-and-claim-desk.md`](docs/adr/0002-belt-profile-and-claim-desk.md) | TBD |
-| [OUTBOX-007](features/features.yml) | Claim desk: race a draft's claims, resolve later, calibrate | partial | [`src/outbox/claimdesk.py`](src/outbox/claimdesk.py) · [`docs/adr/0002-belt-profile-and-claim-desk.md`](docs/adr/0002-belt-profile-and-claim-desk.md) | TBD |
+| [OUTBOX-001](features/features.yml) | Agents: scout (env/clock), claimant-a (fast), claimant-b… | shipped | [`agents`](agents) · [`README.md`](README.md) | FR2, NFR1 |
+| [OUTBOX-002](features/features.yml) | CLI: init, run, watch, score, suite, relay | shipped | [`src/outbox/cli.py`](src/outbox/cli.py) · [`README.md`](README.md) | FR3, NFR2 |
+| [OUTBOX-003](features/features.yml) | Task families: stale_fact, ambiguous, deadline | shipped | [`tasks`](tasks) · [`README.md`](README.md) | FR1, FR3 |
+| [OUTBOX-004](features/features.yml) | Relay to inboxes + ledger.jsonl | shipped | [`src/outbox/mailbox.py`](src/outbox/mailbox.py) · [`README.md`](README.md) | FR2, NFR2 |
+| [OUTBOX-005](features/features.yml) | Scoring: winner, correctness, confidence inversion, retracts | shipped | [`src/outbox/score.py`](src/outbox/score.py) · [`README.md`](README.md) | FR1, FR3 |
+| [OUTBOX-006](features/features.yml) | Belt profile: handoff messages through one gapless, crash-repairable relay | partial | [`src/outbox/belt.py`](src/outbox/belt.py) · [`docs/adr/0002-belt-profile-and-claim-desk.md`](docs/adr/0002-belt-profile-and-claim-desk.md) | FR2, NFR2 |
+| [OUTBOX-007](features/features.yml) | Claim desk: race a draft's claims, resolve later, calibrate | partial | [`src/outbox/claimdesk.py`](src/outbox/claimdesk.py) · [`docs/adr/0002-belt-profile-and-claim-desk.md`](docs/adr/0002-belt-profile-and-claim-desk.md) | FR1, FR3 |
 | [OUTBOX-008](features/features.yml) | Local end-to-end proof of the platform plan across the sibling repos | shipped | [`e2e/run.py`](e2e/run.py) · [`e2e/README.md`](e2e/README.md) | TBD |
 | [OUTBOX-009](features/features.yml) | Constitution missions | planned | [`docs/constitution.md`](docs/constitution.md) · [`PRD.md`](PRD.md) | MR1 |
 
@@ -72,8 +72,12 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 
 | Requirement | Features |
 | --- | --- |
-| TBD | OUTBOX-001, OUTBOX-002, OUTBOX-003, OUTBOX-004, OUTBOX-006, OUTBOX-007, OUTBOX-008 |
-| FR1 | OUTBOX-005 |
+| FR2 | OUTBOX-001, OUTBOX-004, OUTBOX-006 |
+| NFR1 | OUTBOX-001 |
+| FR3 | OUTBOX-002, OUTBOX-003, OUTBOX-005, OUTBOX-007 |
+| NFR2 | OUTBOX-002, OUTBOX-004, OUTBOX-006 |
+| FR1 | OUTBOX-003, OUTBOX-005, OUTBOX-007 |
+| TBD | OUTBOX-008 |
 | MR1 | OUTBOX-009 |
 <!-- features:end -->
 
@@ -99,8 +103,8 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 ## 7. Roadmap / open questions
 
 - Live-agent evaluation protocol and acceptance thresholds: TBD
-- `features/features.yml` is a TODO placeholder
 
 ## 8. Links
 
 - [README.md](README.md) · [AGENTS.md](AGENTS.md) · [SCHEMA.md](SCHEMA.md) · [CHANGELOG.md](CHANGELOG.md)
+- Backlog of record: [GitHub Issues](https://github.com/bamr87/outbox/issues)

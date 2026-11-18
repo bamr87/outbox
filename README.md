@@ -108,7 +108,7 @@ The idea fails if bots only talk in prose, if the highest confidence is systemat
 
 ## Documentation
 
-Every document is indexed, one line each, in [docs/README.md](docs/README.md): the agent guide, the product requirements, the placement schema, the decision records and the generated [CLI reference](docs/reference/cli.md).
+Every document is indexed, one line each, in [docs/README.md](docs/README.md): the agent guide, the product requirements, the placement schema, the security policy, the decision records and the generated [CLI reference](docs/reference/cli.md).
 
 ## Project structure
 
@@ -119,7 +119,7 @@ Every document is indexed, one line each, in [docs/README.md](docs/README.md): t
 | `agents/` | System cards for live Grok Bots and the group kickoff |
 | `protocol/` | JSON Schema for messages |
 | `tests/` | The offline unittest suite |
-| `tools/` | Documentation generators |
+| `tools/` | Documentation generators and the vendored Markdown unwrapper |
 | `docs/` | The docs index, ADRs and the generated CLI reference |
 
 [`SCHEMA.md`](SCHEMA.md) is the placement contract for each of them.
@@ -133,11 +133,19 @@ python3 tools/gen_cli_reference.py --write
 python3 tools/docs_index.py --write
 ```
 
+CI also lints and format-checks the Python with ruff, configured in `pyproject.toml`. ruff and pytest are dev tools, never runtime dependencies:
+
+```bash
+python3 -m pip install ruff pytest
+ruff check . && ruff format --check .    # ruff format . applies the formatting
+pytest -q                                # the unit tests again, as the shared CI gate runs them
+```
+
 Commands, conventions and the trial rules for humans and AI agents live in [AGENTS.md](AGENTS.md).
 
 ## Contributing
 
-Contributions are welcome via pull request. Use [Conventional Commits](https://www.conventionalcommits.org/) and keep the CI checks green. The fleet-wide workflow is described in the hub's [CONTRIBUTING.md](https://github.com/bamr87/bamr87/blob/main/CONTRIBUTING.md). AI agents should start with [AGENTS.md](AGENTS.md).
+Contributions are welcome via pull request. Use [Conventional Commits](https://www.conventionalcommits.org/) and keep the CI checks green. The fleet-wide workflow is described in the hub's [CONTRIBUTING.md](https://github.com/bamr87/bamr87/blob/main/CONTRIBUTING.md). AI agents should start with [AGENTS.md](AGENTS.md). Report a vulnerability privately, as [SECURITY.md](SECURITY.md) describes, never in a public issue.
 
 ## Changelog
 

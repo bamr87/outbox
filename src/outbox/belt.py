@@ -17,11 +17,12 @@ from __future__ import annotations
 import fcntl
 import json
 import re
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 from uuid import uuid4
 
 from .mailbox import append_jsonl, write_json
@@ -36,7 +37,7 @@ _STATION = re.compile(r"\A[a-z0-9][a-z0-9_-]*\Z")
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
 @dataclass
@@ -52,7 +53,9 @@ class Handoff:
     created_at: str = field(default_factory=utc_now)
     ref: dict[str, Any] | None = None
 
-    def reply(self, kind: str, from_station: str, to: list[str], payload: dict[str, Any] | None = None, **extra: Any) -> "Handoff":
+    def reply(
+        self, kind: str, from_station: str, to: list[str], payload: dict[str, Any] | None = None, **extra: Any
+    ) -> Handoff:
         """A follow-on message for the same piece of work: same subject and trace, parented to this one."""
         return Handoff(
             kind=kind,
@@ -83,7 +86,7 @@ class Handoff:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Handoff":
+    def from_dict(cls, data: dict[str, Any]) -> Handoff:
         return cls(
             kind=data["kind"],
             from_station=data["from"],
@@ -146,7 +149,12 @@ def to_cloudevent(data: dict[str, Any]) -> dict[str, Any]:
         "time": data["created_at"],
         "datacontenttype": "application/json",
         "traceparent": f"00-{data['trace']}-{span}-01",
-        "data": {"to": data["to"], "parent_id": data.get("parent_id"), "payload": data["payload"], "ref": data.get("ref")},
+        "data": {
+            "to": data["to"],
+            "parent_id": data.get("parent_id"),
+            "payload": data["payload"],
+            "ref": data.get("ref"),
+        },
     }
 
 
@@ -241,7 +249,9 @@ class BeltRelay:
                 unknown = [d for d in data.get("to") or [] if d != "ledger" and d not in known]
                 errors.extend(f"unknown_recipient:{d}" for d in unknown)
                 if errors:
-                    append_jsonl(self.dead_letter, {"id": msg_id, "station": station, "path": path.name, "errors": errors})
+                    append_jsonl(
+                        self.dead_letter, {"id": msg_id, "station": station, "path": path.name, "errors": errors}
+                    )
                     seen.add(msg_id)
                     continue
                 seq += 1

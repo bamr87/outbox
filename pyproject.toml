@@ -19,3 +19,25 @@ where = ["src"]
 
 [tool.setuptools.package-dir]
 "" = "src"
+
+# Dev and CI tools only: the runtime stays standard library, with no dependencies.
+# ruff reads the target version from requires-python.
+[tool.ruff]
+line-length = 120
+# The two tools/ scripts are vendored byte-identical from bamr87/bamr87, so neither the linter nor the
+# formatter may touch them. Markdown belongs to the one-paragraph-per-line gate (markdown-oneline.yml),
+# not to ruff format, which would otherwise reach into generated and kit-copied documents.
+extend-exclude = ["tools/docs_index.py", "tools/unwrap-prose.py", "*.md"]
+force-exclude = true
+# The e2e/ scripts import their sibling snapshot.py as a local module.
+src = [".", "src", "e2e"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

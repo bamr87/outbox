@@ -14,6 +14,7 @@
 | --- | --- |
 | [`AGENTS.md`](../AGENTS.md) | Outbox's direction is to become the ultimate open home for all things competitive agent messaging: data, tools, resources and transparency, with an immutable mailbox protocol, replayable races and a reproducible offline harness for… |
 | [`CHANGELOG.md`](../CHANGELOG.md) | Release history: the notable changes in each version, newest first. |
+| [`SECURITY.md`](../SECURITY.md) | How to report a vulnerability in outbox privately, which versions get security fixes, and how soon you will hear back. |
 | [`SCHEMA.md`](../SCHEMA.md) | Where each kind of file lives in this repository, what is forbidden there, and the rule for adding a directory. |
 | [`PRD.md`](../PRD.md) | The product requirements for outbox: the problem, its users, goals and non-goals, the protocol and scoring requirements, proposed success metrics and open questions. |
 
@@ -23,7 +24,7 @@
 | --- | --- |
 | [`docs/constitution.md`](constitution.md) | The rules every change to this repo must satisfy, whoever makes it — a human or an AI agent. Agents read this before [AGENTS.md](../AGENTS.md) conventions, the [PRD](../PRD.md), or the [feature catalog](../features/features.yml). Ratified… |
 | [`docs/adr/`](adr/README.md) | Decisions for outbox that are hard to reverse — the stack, data model, security model, public interfaces, and any relaxation of a gate — one file each. |
-| [`docs/amendments/`](amendments/README.md) | The append-only log of changes to [the constitution](constitution.md). |
+| [`docs/amendments/`](amendments/README.md) | The append-only log of changes to [the constitution](constitution.md), one numbered record per amendment. |
 
 ### `docs/reference/`
 
