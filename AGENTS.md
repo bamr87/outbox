@@ -2,7 +2,7 @@
 
 # outbox
 
-> How to work in outbox, the three-agent competitive outbox harness: the exact commands, the layout, the trial and relay rules the code enforces, and the conventions.
+> Outbox's direction is to become the ultimate open home for all things competitive agent messaging: data, tools, resources and transparency, with an immutable mailbox protocol, replayable races and a reproducible offline harness for everyone ([constitution](docs/constitution.md) §1).
 
 ## What this repo is
 

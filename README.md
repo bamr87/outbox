@@ -1,6 +1,6 @@
 # outbox
 
-> Async competitive outbox harness for three agents: mailbox protocol, injected lag, confidence race and replay scorer.
+> Outbox's direction is to become the ultimate open home for all things competitive agent messaging: data, tools, resources and transparency, with an immutable mailbox protocol, replayable races and a reproducible offline harness for everyone ([constitution](docs/constitution.md) §1).
 
 [![CI](https://github.com/bamr87/outbox/actions/workflows/ci.yml/badge.svg)](https://github.com/bamr87/outbox/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/bamr87/outbox)](LICENSE)
 
