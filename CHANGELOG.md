@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.0](https://github.com/bamr87/outbox/compare/v0.1.0...v0.2.0) (2026-11-18)
+
+
+### Added
+
+* add the belt profile, the claim desk and a local e2e proof of the platform plan ([ec82031](https://github.com/bamr87/outbox/commit/ec82031c3f4d6f16a14fdef6e792dc5110bd733f))
+* add the belt profile, the claim desk and a local e2e proof of the platform plan ([4221c90](https://github.com/bamr87/outbox/commit/4221c90a1f1cfa31148fec7ef5fab98e50539dc3))
+* add verifier agent for acceptance testing and user experience validation ([029d253](https://github.com/bamr87/outbox/commit/029d253a235e2294d6e5d3a965087e3b7f0d77a2))
+* add verify-feature skill for user experience validation ([747617a](https://github.com/bamr87/outbox/commit/747617a56891d37d268417ae3320337b743e5ac2))
+
+
+### Fixed
+
+* **release:** skip release-please when it has no credential to open the PR ([fcbc4c6](https://github.com/bamr87/outbox/commit/fcbc4c6032c0fd89054dc7bf52b7f59eb640dc92))
+* **release:** skip release-please when it has no credential to open the PR ([19fc6d3](https://github.com/bamr87/outbox/commit/19fc6d3c0452fd89b21e3bdb738ef86c82781237))
+
+## Changelog
+
 All notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
